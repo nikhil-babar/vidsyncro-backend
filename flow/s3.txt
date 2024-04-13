@@ -1,0 +1,21 @@
+project_id/
+    - files
+        - video_1
+        - video_2
+        - video_3
+    - timeline
+        - timeline_1.mp4
+        - timeline_1.edl
+        - timeline_2.mp4
+        - timeline_2.edl
+    - edited_video
+        - edited_video_1.mp4
+        - edited_video_2.mp4
+    - production_video
+        - edited_video_1
+            - dash package
+            - .vtt
+            - .png
+            - .audio
+            - thumnail
+            - metadata

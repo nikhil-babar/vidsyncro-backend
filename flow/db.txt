@@ -1,0 +1,42 @@
+projectCollection: {
+    {
+        "project_id": "",
+        "title": " ",
+        "description": " ",
+        "create_timestamp": " ",
+        "production": {
+            "production_video_1": {
+                "video_titles": [],
+                "video_description": [],
+                "video_path": " ",
+                "thumnail_path": " ",
+                "available_formats": []
+            }
+        }
+        "tasks": {
+            "task_1_id": {
+                "resource_path": " ",
+                "task": "<type>",
+                "events": {
+                    "event_1": {
+                        "status": ""
+                        //metadata
+                    },
+                    "event_1": {
+                        "status": ""
+                        //metadata
+                    },
+                    "event_1": {
+                        "status": ""
+                        //metadata
+                    },
+                    "event_1": {
+                        "status": ""
+                        //metadata
+                    }
+                }
+                "status": "pending,success,failure",
+            }
+        }
+    }
+}
