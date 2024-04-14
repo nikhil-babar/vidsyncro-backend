@@ -1,0 +1,89 @@
+segment - ['raw_files', 'timeline', 'edited_video', 'production']
+task - ['publish-pipeline (transcoding, ai_sauce)', 'timeline-generation(edl)']
+status - ['failure', 'pending', 'successfull']
+file_path - project_id/segment/file_name.ext
+
+- project
+    - create_project 
+        Parameters:
+            - user_id
+            - title
+            - description
+            - settings
+
+        Result: 
+            - project_id
+
+    - add_user
+        Parameters:
+            - user_id
+            - owner_id
+        
+        Result: 
+            - user_id
+            - project_id
+
+- assets 
+    - get_assets
+        Parameters: 
+            - project_id
+            - user_id
+            - segment
+
+        Result:
+            - asset_i
+                - metadata
+                - cdn_url
+
+    - post_assets
+        Parameters:
+            - project_id
+            - user_id
+            - segment
+            - file_names
+            - metadata's
+            
+        Result:
+            - asset_i
+                - signed_url
+
+
+- tasks
+    - get_status
+        Parameters:
+            - project_id
+            - user_id
+            - task_id
+
+        Result:
+            - metadata
+            - status
+    
+    - create_task
+        Parameters:
+            - project_id
+            - user_id
+            - task
+            - file_path
+
+        Result:
+            - task_id
+
+    - get_tasks
+        Parameters:
+            - project_id
+            
+        Result:
+            - tasks
+                - metadata
+                - status
+
+
+publish-pipeline 
+    - transcoding
+    - transcript/title/description/thumnail
+    - task3
+
+sns => type: publish-pipeline - transcoding-sqs -> transcoding-lambda -> transcoding-cluster => output to db
+                              - transcript-sqs -> transcript-lambda -> transcript-cluster
+                              - task3-sqs -> task3-lambda -> task3-cluster -> s3

@@ -1,12 +1,11 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-
 Globals:
   Function:
     Timeout: 100
     Runtime: nodejs20.x
     Architectures:
-      - x86_64
+    - x86_64
     Environment:
       Variables:
         REGION: us-east-2
@@ -20,42 +19,43 @@ Globals:
         URL_EXPIRATION_SECONDS: 1000
         MONGO_URL: mongodb+srv://nikhilbabarjee:FSNAmZHHncz8ikqU@vidsycncro-cluster.9zc40jy.mongodb.net/?retryWrites=true&w=majority&appName=Vidsycncro-cluster
         MONGO_DB_NAME: vidysncro-db
-
 Resources:
   PostAssetsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
+      CodeUri: PostAssetsFunction
       Handler: src/api/assets/post-assets.handler
       Policies:
-        - S3CrudPolicy:
-            BucketName: vidsyncro-videos-bucket
+      - S3CrudPolicy:
+          BucketName: vidsyncro-videos-bucket
       Events:
         PostAssets:
           Type: Api
           Properties:
             Path: /assets/v1/post-assets
             Method: post
-
+    Metadata:
+      SamResourceId: PostAssetsFunction
   GetAssetsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
+      CodeUri: GetAssetsFunction
       Handler: src/api/assets/get-assets.handler
       Policies:
-        - S3CrudPolicy:
-            BucketName: vidsyncro-videos-bucket
+      - S3CrudPolicy:
+          BucketName: vidsyncro-videos-bucket
       Events:
         PostAssets:
           Type: Api
           Properties:
             Path: /assets/v1/get-assets
             Method: get
-
+    Metadata:
+      SamResourceId: GetAssetsFunction
   CreateProjectFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
+      CodeUri: CreateProjectFunction
       Handler: src/api/project/create-project.handler
       Events:
         CreateProject:
@@ -63,22 +63,24 @@ Resources:
           Properties:
             Path: /project/v1/create-project
             Method: post
-
+    Metadata:
+      SamResourceId: CreateProjectFunction
   CreateTaskFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
+      CodeUri: CreateTaskFunction
       Handler: src/api/tasks/create-task.handler
       Policies:
-        - SNSPublishMessagePolicy:
-            TopicName: transcoding
+      - SNSPublishMessagePolicy:
+          TopicName: transcoding
       Events:
         CreateTask:
           Type: Api
           Properties:
             Path: /tasks/v1/create-tasks
             Method: post
-
+    Metadata:
+      SamResourceId: CreateTaskFunction
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -91,9 +93,9 @@ Resources:
     Properties:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
-      AutoConfigurationEnabled: "true"
-
+      AutoConfigurationEnabled: 'true'
 Outputs:
   VidSyncroApi:
     Description: API Gateway endpoint URL for transcoding
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/"
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/

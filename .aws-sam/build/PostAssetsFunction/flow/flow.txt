@@ -1,0 +1,8 @@
+publish-pipeline
+transcoding
+ai_sauce
+edl_pipeline
+
+task -> project_id -------------> sns notification --------------------> sqs queueing based ----------> one single script  ------------------> task -------------> db update (tasks and production)
+        task_type                 task_type (resolved)                   on task_type field             runs task based on message
+        file_path/dir_path        metadata                                  (one to many)
