@@ -26,7 +26,7 @@ async function listEdlFiles() {
   const command = new ListObjectsCommand({
     Bucket: "assets-edl",
     Prefix: prefix,
-    MaxKeys: 2,
+    MaxKeys: 1,
   });
 
   try {
