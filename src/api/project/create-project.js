@@ -12,6 +12,33 @@ connectDb(MONGO_URL, MONGO_DB_NAME)
     console.log("Failed to connect to mongodb");
   });
 
+/*
+  INPUT: 
+
+  {
+      "title": "Vidsycro",
+      "description": "Descriptio of Vidsycro"
+  }
+
+  OUTPUT: 
+
+  {
+    "data": {
+        "title": "Vidsycro",
+        "description": "Descriptio of Vidsycro",
+        "_id": "661e93bf8944fc883af65ef2",
+        "tasks": [],
+        "__v": 0
+    }
+  }
+
+  FLOW:
+
+  Apply checks on title and description
+  Create a new Project in database.
+
+*/
+
 export async function handler(event, context) {
   try {
     context.callbackWaitsForEmptyEventLoop = false;
