@@ -12,6 +12,17 @@ const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
 const TASK = JSON.parse(process.env.TASK);
 const LOCAL_OUTDIR = resolve(process.cwd(), "output");
 
+/*
+  Task: {
+    project_id,
+    task_id,
+    event,
+    resource_path,
+    output_folder
+    timestamp
+  }
+*/
+
 connectDb(MONGO_URL, MONGO_DB_NAME)
   .then(() => console.log("Connected to mongodb"))
   .catch(() => {

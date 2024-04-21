@@ -6,6 +6,7 @@ import { taskToEventMapping } from "../../../config/config.js";
 import { snsClient } from "../../utils/sns-client.js";
 import { PublishCommand } from "@aws-sdk/client-sns";
 import mongoose from "mongoose";
+import { z } from "zod";
 
 const MONGO_URL = process.env.MONGO_URL;
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
@@ -69,33 +70,40 @@ connectDb(MONGO_URL, MONGO_DB_NAME)
 
 */
 
+const createTaskParameter = z
+  .object({
+    project_id: z.custom((val) => mongoose.isObjectIdOrHexString(val), {
+      message: "Please provide a valid project id",
+    }),
+    task: z.enum(Object.keys(taskToEventMapping), {
+      required_error: `Task must be one of the following: ${Object.keys(
+        taskToEventMapping
+      ).join(",")}`,
+    }),
+    resource_path: z.string({
+      required_error: "Plz provide a resource",
+    }),
+  })
+  .strict();
+
 export async function handler(event, context) {
   try {
     context.callbackWaitsForEmptyEventLoop = false;
 
     console.log("Received event: ", log(event));
 
-    const body = JSON.parse(event.body);
+    const parsed = createTaskParameter.safeParse(JSON.parse(event.body));
 
-    const { project_id, task, resource_path } = body;
-
-    if (!project_id || !task || !resource_path) {
+    if (!parsed.success) {
       return error(
         {
-          message: "Invalid parameters",
+          message: parsed.error,
         },
         422
       );
     }
 
-    if (!Object.keys(taskToEventMapping).includes(task)) {
-      return error(
-        {
-          message: "Invalid task specified",
-        },
-        422
-      );
-    }
+    const { project_id, task, resource_path } = parsed.data;
 
     const project = await Project.findById(project_id);
 

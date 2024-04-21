@@ -2,6 +2,7 @@ import connectDb from "../../utils/mongo-connection.js";
 import Project from "../../models/Project.js";
 import log from "../../utils/log.js";
 import { error, success } from "../../utils/response.js";
+import { z } from "zod";
 
 const MONGO_URL = process.env.MONGO_URL;
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
@@ -11,6 +12,17 @@ connectDb(MONGO_URL, MONGO_DB_NAME)
   .catch(() => {
     console.log("Failed to connect to mongodb");
   });
+
+const createProjectParameters = z
+  .object({
+    title: z.string({
+      required_error: "Project title must be a string",
+    }),
+    description: z.string({
+      required_error: "Project description must be a string",
+    }),
+  })
+  .strict();
 
 /*
   INPUT: 
@@ -45,11 +57,22 @@ export async function handler(event, context) {
 
     console.log("Received event: ", log(event));
 
-    const body = JSON.parse(event.body);
+    const parsed = createProjectParameters.safeParse(JSON.parse(event.body));
+
+    if (!parsed.success) {
+      return error(
+        {
+          message: parsed.error,
+        },
+        422
+      );
+    }
+
+    const { title, description } = parsed.data;
 
     const newProject = new Project({
-      title: body.title,
-      description: body.description,
+      title,
+      description,
     });
 
     await newProject.save();

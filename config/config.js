@@ -1,21 +1,21 @@
+export const projectDirectory = {
+  assets: "assets",
+  transcoded_videos: "transcoded_videos",
+  edited_videos: "edited_videos",
+};
+
 export const taskToEventMapping = {
   publish_pipeline: {
     events: ["transcoding"],
   },
 };
 
-export const queueToDirectoryMapping = {
-  [process.env.TRANSCODING_QUEUE]: "dash",
-};
-
-export const queueToEventMapping = {
-  [process.env.TRANSCODING_QUEUE]: "transcoding",
-};
-
 export const queueToTask = {
   [process.env.TRANSCODING_QUEUE]: {
-    TASK: process.env.TRANSCODING_TASK,
-    TASK_IMAGE: process.env.TRANSCODING_TASK_IMAGE,
+    task: process.env.TRANSCODING_TASK,
+    task_image: process.env.TRANSCODING_TASK_IMAGE,
+    output_directory: projectDirectory.transcoded_videos,
+    event: "transcoding",
   },
 };
 
