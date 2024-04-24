@@ -8,11 +8,9 @@ import { PublishCommand } from "@aws-sdk/client-sns";
 import mongoose from "mongoose";
 import { z } from "zod";
 
-const MONGO_URL = process.env.MONGO_URL;
-const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
 const SNS_TOPIC = process.env.SNS_TOPIC;
 
-connectDb(MONGO_URL, MONGO_DB_NAME)
+connectDb()
   .then(() => console.log("Connected to mongodb"))
   .catch(() => {
     console.log("Failed to connect to mongodb");

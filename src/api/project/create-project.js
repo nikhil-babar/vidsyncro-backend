@@ -4,10 +4,7 @@ import log from "../../utils/log.js";
 import { error, success } from "../../utils/response.js";
 import { z } from "zod";
 
-const MONGO_URL = process.env.MONGO_URL;
-const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
-
-connectDb(MONGO_URL, MONGO_DB_NAME)
+connectDb()
   .then(() => console.log("Connected to mongodb"))
   .catch(() => {
     console.log("Failed to connect to mongodb");

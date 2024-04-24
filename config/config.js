@@ -1,11 +1,21 @@
-export const projectDirectory = {
+export const segments = {
   assets: "assets",
-  transcoded_videos: "transcoded_videos",
   edited_videos: "edited_videos",
+  timeline_videos: "timeline_videos",
+  production_videos: "production_videos",
+};
+
+export const segmentToTaskMapping = {
+  assets: "assets",
+  edited_videos: "publish_to_edited_videos",
+  production_videos: "publish_to_production_videos",
 };
 
 export const taskToEventMapping = {
-  publish_pipeline: {
+  publish_to_production_videos: {
+    events: ["transcoding"],
+  },
+  publish_to_edited_videos: {
     events: ["transcoding"],
   },
 };
@@ -14,7 +24,7 @@ export const queueToTask = {
   [process.env.TRANSCODING_QUEUE]: {
     task: process.env.TRANSCODING_TASK,
     task_image: process.env.TRANSCODING_TASK_IMAGE,
-    output_directory: projectDirectory.transcoded_videos,
+    output_directory: "dash",
     event: "transcoding",
   },
 };

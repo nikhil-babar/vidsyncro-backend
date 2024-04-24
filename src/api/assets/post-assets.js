@@ -4,7 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { success, error } from "../../utils/response.js";
 import { v4 as uuid } from "uuid";
 import { z } from "zod";
-import { projectDirectory } from "../../../config/config.js";
+import { segments } from "../../../config/config.js";
 import mongoose from "mongoose";
 
 const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
@@ -49,9 +49,9 @@ const postAssetsParameter = z.object({
         project_id: z.custom((val) => mongoose.isObjectIdOrHexString(val), {
           message: "Please provide a valid project id",
         }),
-        segment: z.enum(Object.values(projectDirectory), {
+        segment: z.enum(Object.values(segments), {
           required_error: `Segment must be a validate partition: ${Object.values(
-            projectDirectory
+            segments
           ).join(",")}`,
         }),
         name: z.string({

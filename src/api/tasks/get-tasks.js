@@ -5,9 +5,6 @@ import connectDb from "../../utils/mongo-connection.js";
 import Project from "../../models/Project.js";
 import mongoose from "mongoose";
 
-const MONGO_URL = process.env.MONGO_URL;
-const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
-
 const getTasksParameter = z
   .object({
     project_id: z.custom((val) => mongoose.isObjectIdOrHexString(val), {
@@ -16,7 +13,7 @@ const getTasksParameter = z
   })
   .strict();
 
-connectDb(MONGO_URL, MONGO_DB_NAME)
+connectDb()
   .then(() => {
     console.log("Connected to mongodb");
   })
