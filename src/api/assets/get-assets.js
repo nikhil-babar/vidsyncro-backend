@@ -14,6 +14,9 @@ const getAssetsParameter = z.object({
   project_id: z.custom((val) => mongoose.isObjectIdOrHexString(val), {
     message: "Please provide a valid project id",
   }),
+  user_id: z.string({
+    required_error: "User id must be a string",
+  }),
   segment: z.enum(Object.values(segments), {
     required_error: `Segment must be a validate partition: ${Object.values(
       segments
@@ -42,7 +45,7 @@ export const handler = async (event) => {
       );
     }
 
-    const { project_id, segment } = parsed.data;
+    const { project_id, segment, user_id } = parsed.data;
 
     if (segment.localeCompare(segments.assets) === 0) {
       const input = {
@@ -64,7 +67,10 @@ export const handler = async (event) => {
 
     const task_type = segmentToTaskMapping[segment];
 
-    const project = await Project.findById(project_id);
+    const project = await Project.findOne({
+      user_id,
+      _id: new mongoose.Types.ObjectId(project_id),
+    });
 
     if (!project) {
       return error(

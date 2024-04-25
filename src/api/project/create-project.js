@@ -12,6 +12,9 @@ connectDb()
 
 const createProjectParameters = z
   .object({
+    user_id: z.string({
+      required_error: "User id must be a string",
+    }),
     title: z.string({
       required_error: "Project title must be a string",
     }),
@@ -20,33 +23,6 @@ const createProjectParameters = z
     }),
   })
   .strict();
-
-/*
-  INPUT: 
-
-  {
-      "title": "Vidsycro",
-      "description": "Descriptio of Vidsycro"
-  }
-
-  OUTPUT: 
-
-  {
-    "data": {
-        "title": "Vidsycro",
-        "description": "Descriptio of Vidsycro",
-        "_id": "661e93bf8944fc883af65ef2",
-        "tasks": [],
-        "__v": 0
-    }
-  }
-
-  FLOW:
-
-  Apply checks on title and description
-  Create a new Project in database.
-
-*/
 
 export async function handler(event, context) {
   try {
@@ -65,9 +41,10 @@ export async function handler(event, context) {
       );
     }
 
-    const { title, description } = parsed.data;
+    const { title, description, user_id } = parsed.data;
 
     const newProject = new Project({
+      user_id,
       title,
       description,
     });

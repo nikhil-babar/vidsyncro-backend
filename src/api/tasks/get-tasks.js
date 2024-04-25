@@ -10,6 +10,9 @@ const getTasksParameter = z
     project_id: z.custom((val) => mongoose.isObjectIdOrHexString(val), {
       message: "Please provide a valid project id",
     }),
+    user_id: z.string({
+      required_error: "User id must be a string",
+    }),
   })
   .strict();
 
@@ -38,9 +41,12 @@ export const handler = async (event, context) => {
       );
     }
 
-    const { project_id } = parsed.data;
+    const { project_id, user_id } = parsed.data;
 
-    const project = await Project.findById(project_id);
+    const project = await Project.findOne({
+      user_id,
+      _id: new mongoose.Types.ObjectId(project_id),
+    });
 
     if (!project) {
       return error(
@@ -53,7 +59,7 @@ export const handler = async (event, context) => {
 
     return success(
       {
-        tasks: project.tasks,
+        data: project.tasks,
       },
       200
     );
