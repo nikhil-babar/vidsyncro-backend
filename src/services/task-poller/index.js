@@ -1,11 +1,7 @@
 import log from "../../utils/log.js";
 import { RunTaskCommand } from "@aws-sdk/client-ecs";
 import { ecsClient } from "../../utils/ecs-client.js";
-import {
-  queueToDirectoryMapping,
-  queueToEventMapping,
-  queueToTask,
-} from "../../../config/config.js";
+import { queueToTask } from "../../../config/config.js";
 
 const CLUSTER = process.env.CLUSTER;
 const CLUSTER_SUBNET = process.env.CLUSTER_SUBNET;
@@ -62,27 +58,32 @@ export const handler = async (event, context) => {
       try {
         const body = JSON.parse(record.body);
         const message = JSON.parse(body.Message);
+
         const queue = body.TopicArn.split(":").at(-1);
 
-        const resource_path = message.resource_path;
-        const project_id = message.project_id;
-        const output_dir = queueToDirectoryMapping[queue];
+        if (!Object.keys(queueToTask).includes(queue)) {
+          throw `No details found corresponding to queue: ${queue}`;
+        }
+
+        const { resource_path, project_id } = message;
+        const { output_directory, task, task_image, event } =
+          queueToTask[queue];
 
         const file = resource_path.split("/").at(-1);
-        const output_path = `${project_id}/${output_dir}/${file}`;
+        const output_path = `${project_id}/${output_directory}/${file}`;
 
         const config = {
           ...message,
           output_path,
-          output_dir,
-          event: queueToEventMapping[queue],
+          output_directory,
+          event,
         };
 
         console.log("Configuration of task: ", config);
 
         const command = new RunTaskCommand({
           cluster: CLUSTER,
-          taskDefinition: queueToTask[queue].TASK,
+          taskDefinition: task,
           launchType: "FARGATE",
           count: 1,
           networkConfiguration: {
@@ -95,7 +96,7 @@ export const handler = async (event, context) => {
           overrides: {
             containerOverrides: [
               {
-                name: queueToTask[queue].TASK_IMAGE,
+                name: task_image,
                 environment: [
                   {
                     name: "TASK",

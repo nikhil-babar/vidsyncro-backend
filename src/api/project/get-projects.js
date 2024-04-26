@@ -13,13 +13,7 @@ connectDb()
 const createProjectParameters = z
   .object({
     user_id: z.string({
-      required_error: "User id must be a string",
-    }),
-    title: z.string({
-      required_error: "Project title must be a string",
-    }),
-    description: z.string({
-      required_error: "Project description must be a string",
+      required_error: "Plz provide a userId",
     }),
   })
   .strict();
@@ -30,7 +24,9 @@ export async function handler(event, context) {
 
     console.log("Received event: ", log(event));
 
-    const parsed = createProjectParameters.safeParse(JSON.parse(event.body));
+    const parsed = createProjectParameters.safeParse(
+      event.queryStringParameters
+    );
 
     if (!parsed.success) {
       return error(
@@ -41,19 +37,23 @@ export async function handler(event, context) {
       );
     }
 
-    const { title, description, user_id } = parsed.data;
+    const { user_id } = parsed.data;
 
-    const newProject = new Project({
-      user_id,
-      title,
-      description,
-    });
-
-    await newProject.save();
+    const projects = await Project.find(
+      {
+        user_id: user_id,
+      },
+      {},
+      {
+        projection: {
+          tasks: 0,
+        },
+      }
+    );
 
     return success(
       {
-        data: newProject,
+        data: projects,
       },
       200
     );

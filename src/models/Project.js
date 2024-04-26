@@ -9,6 +9,10 @@ export const ProjectSchema = new Schema({
     type: String,
     required: true,
   },
+  user_id: {
+    type: String,
+    required: true,
+  },
   tasks: {
     type: [
       {

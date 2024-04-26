@@ -1,21 +1,31 @@
+export const segments = {
+  assets: "assets",
+  edited_videos: "edited_videos",
+  timeline_videos: "timeline_videos",
+  production_videos: "production_videos",
+};
+
+export const segmentToTaskMapping = {
+  assets: "assets",
+  edited_videos: "publish_to_edited_videos",
+  production_videos: "publish_to_production_videos",
+};
+
 export const taskToEventMapping = {
-  publish_pipeline: {
+  publish_to_production_videos: {
+    events: ["transcoding"],
+  },
+  publish_to_edited_videos: {
     events: ["transcoding"],
   },
 };
 
-export const queueToDirectoryMapping = {
-  [process.env.TRANSCODING_QUEUE]: "dash",
-};
-
-export const queueToEventMapping = {
-  [process.env.TRANSCODING_QUEUE]: "transcoding",
-};
-
 export const queueToTask = {
   [process.env.TRANSCODING_QUEUE]: {
-    TASK: process.env.TRANSCODING_TASK,
-    TASK_IMAGE: process.env.TRANSCODING_TASK_IMAGE,
+    task: process.env.TRANSCODING_TASK,
+    task_image: process.env.TRANSCODING_TASK_IMAGE,
+    output_directory: "dash",
+    event: "transcoding",
   },
 };
 

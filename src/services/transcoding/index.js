@@ -7,12 +7,21 @@ import updateEventInTask from "./update-task.js";
 import mongoose from "mongoose";
 
 const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
-const MONGO_URL = process.env.MONGO_URL;
-const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
 const TASK = JSON.parse(process.env.TASK);
 const LOCAL_OUTDIR = resolve(process.cwd(), "output");
 
-connectDb(MONGO_URL, MONGO_DB_NAME)
+/*
+  Task: {
+    project_id,
+    task_id,
+    event,
+    resource_path,
+    output_folder
+    timestamp
+  }
+*/
+
+connectDb()
   .then(() => console.log("Connected to mongodb"))
   .catch(() => {
     console.log("Failed to connect to mongodb");
