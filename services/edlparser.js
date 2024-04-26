@@ -130,7 +130,6 @@ async function downloadAndParseEDLFiles() {
   }
 }
 
-//const TASK = JSON.parse(process.env.TASK);
 
 async function init() {
   try {
