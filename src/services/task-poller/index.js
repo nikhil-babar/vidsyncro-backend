@@ -1,7 +1,13 @@
 import log from "../../utils/log.js";
 import { RunTaskCommand } from "@aws-sdk/client-ecs";
 import { ecsClient } from "../../utils/ecs-client.js";
-import { queueToTask } from "../../../config/config.js";
+import { z } from "zod";
+import mongoose from "mongoose";
+import {
+  eventDetails,
+  taskToEventMapping,
+  tasks,
+} from "../../../config/config.js";
 
 const CLUSTER = process.env.CLUSTER;
 const CLUSTER_SUBNET = process.env.CLUSTER_SUBNET;
@@ -48,42 +54,63 @@ const CLUSTER_SECURITY_GROUP = process.env.CLUSTER_SECURITY_GROUP;
 
 */
 
+const createTaskParameter = z
+  .object({
+    project_id: z.custom((val) => mongoose.isObjectIdOrHexString(val), {
+      message: "Please provide a valid project id",
+    }),
+    task_id: z.custom((val) => mongoose.isObjectIdOrHexString(val), {
+      message: "Please provide a valid task id",
+    }),
+    user_id: z.string({
+      required_error: "User id must be a string",
+    }),
+    task: z.enum(Object.keys(tasks), {
+      required_error: `Task must be one of the following: ${Object.keys(
+        tasks
+      ).join(",")}`,
+    }),
+    resource_path: z.string({
+      required_error: "Plz provide a resource path",
+    }),
+  })
+  .strict();
+
 export const handler = async (event, context) => {
-  try {
-    context.callbackWaitsForEmptyEventLoop = false;
+  context.callbackWaitsForEmptyEventLoop = false;
 
-    console.log("Received event: ", log(event));
+  console.log("Received event: ", log(event));
 
-    for (const record of event.Records) {
+  for (const record of event.Records) {
+    const body = JSON.parse(record.body);
+    const parsed = createTaskParameter.safeParse(JSON.parse(body.Message));
+
+    if (!parsed.success) {
+      throw `Invalid parameters passed: ${parsed.error}`;
+    }
+
+    const { task, resource_path, project_id } = parsed.data;
+    const file = resource_path.split("/").at(-1);
+
+    const events = taskToEventMapping[task];
+
+    for (const event of events) {
       try {
-        const body = JSON.parse(record.body);
-        const message = JSON.parse(body.Message);
-
-        const queue = body.TopicArn.split(":").at(-1);
-
-        if (!Object.keys(queueToTask).includes(queue)) {
-          throw `No details found corresponding to queue: ${queue}`;
-        }
-
-        const { resource_path, project_id } = message;
-        const { output_directory, task, task_image, event } =
-          queueToTask[queue];
-
-        const file = resource_path.split("/").at(-1);
+        const { output_directory, task_definition, task_image } =
+          eventDetails[event];
         const output_path = `${project_id}/${output_directory}/${file}`;
 
         const config = {
-          ...message,
           output_path,
-          output_directory,
-          event,
+          ...parsed.data,
+          ...eventDetails[event],
         };
 
         console.log("Configuration of task: ", config);
 
         const command = new RunTaskCommand({
           cluster: CLUSTER,
-          taskDefinition: task,
+          taskDefinition: task_definition,
           launchType: "FARGATE",
           count: 1,
           networkConfiguration: {
@@ -112,10 +139,8 @@ export const handler = async (event, context) => {
 
         console.log("Task intiatied: ", log(ecsRes.$metadata));
       } catch (err) {
-        console.log("Error while initiating tasks: ", err.message);
+        console.log("Error while initiating event: ", err.message);
       }
     }
-  } catch (err) {
-    console.log("Error while initiating tasks: ", err.message);
   }
 };

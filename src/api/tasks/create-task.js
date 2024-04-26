@@ -2,7 +2,7 @@ import Project from "../../models/Project.js";
 import { success, error } from "../../utils/response.js";
 import log from "../../utils/log.js";
 import connectDb from "../../utils/mongo-connection.js";
-import { taskToEventMapping } from "../../../config/config.js";
+import { taskToEventMapping, tasks } from "../../../config/config.js";
 import { snsClient } from "../../utils/sns-client.js";
 import { PublishCommand } from "@aws-sdk/client-sns";
 import mongoose from "mongoose";
@@ -76,9 +76,9 @@ const createTaskParameter = z
     user_id: z.string({
       required_error: "User id must be a string",
     }),
-    task: z.enum(Object.keys(taskToEventMapping), {
+    task: z.enum(Object.keys(tasks), {
       required_error: `Task must be one of the following: ${Object.keys(
-        taskToEventMapping
+        tasks
       ).join(",")}`,
     }),
     resource_path: z.string({
@@ -125,8 +125,8 @@ export async function handler(event, context) {
     const input = {
       TopicArn: SNS_TOPIC,
       Message: JSON.stringify({
-        events: taskToEventMapping[task].events,
         project_id,
+        user_id,
         task,
         task_id,
         resource_path,
@@ -146,7 +146,7 @@ export async function handler(event, context) {
       events: {},
     };
 
-    taskToEventMapping[task].events.forEach(
+    taskToEventMapping[task].forEach(
       (event) =>
         (newTask.events[event] = {
           status: "QUEUED",
