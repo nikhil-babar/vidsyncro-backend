@@ -73,6 +73,9 @@ const createTaskParameter = z
     project_id: z.custom((val) => mongoose.isObjectIdOrHexString(val), {
       message: "Please provide a valid project id",
     }),
+    user_id: z.string({
+      required_error: "User id must be a string",
+    }),
     task: z.enum(Object.keys(taskToEventMapping), {
       required_error: `Task must be one of the following: ${Object.keys(
         taskToEventMapping
@@ -101,9 +104,12 @@ export async function handler(event, context) {
       );
     }
 
-    const { project_id, task, resource_path } = parsed.data;
+    const { project_id, user_id, task, resource_path } = parsed.data;
 
-    const project = await Project.findById(project_id);
+    const project = await Project.findOne({
+      user_id,
+      _id: new mongoose.Types.ObjectId(project_id),
+    });
 
     if (!project) {
       return error(
@@ -158,7 +164,7 @@ export async function handler(event, context) {
 
     return success(
       {
-        data: project,
+        data: project.tasks,
       },
       200
     );
