@@ -9,7 +9,7 @@ projectCollection: {
                 "video_titles": [],
                 "video_description": [],
                 "video_path": " ",
-                "thumnail_path": " ",
+                "thumbnail_path": " ",
                 "available_formats": []
             }
         }
