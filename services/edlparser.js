@@ -20,12 +20,12 @@ const s3Client = new S3Client({
   region: "ap-south-1",
 });
 
-const projectId = process.env.PROJECT_ID;
+const TASK = JSON.parse(process.env.TASK);
+const projectId = TASK.project_id;
 const edlFileName = process.env.EDL_FILE_NAME;
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
 const edlFile = `projects/${projectId}/timeline/${edlFileName}`;
 const mongoDbURL = process.env.MONGO_DB_URL;
-const TASK = JSON.parse(process.env.TASK);
 // //connecting database
 connectDb(mongoDbURL, MONGO_DB_NAME)
   .then(() => {

@@ -10,10 +10,12 @@ const s3Client = new S3Client({
   region: "ap-south-1",
 });
 
-let projectId = JSON.parse(process.env.PROJECT_ID);
+const TASK = JSON.parse(process.env.TASK);
 const editedVideosDirectory = "/app/editedvideos/";
 async function putObject(filename) {
-  const key = `projects/project${projectId}/timeline/${filename}-${randomUUID()}.mp4`;
+  const key = `projects/project${
+    TASK.project_id
+  }/timeline/${filename}-${randomUUID()}.mp4`;
   const command = new PutObjectCommand({
     Bucket: "assets-edl",
     Key: key,
@@ -48,19 +50,13 @@ async function uploadVideos() {
 
 async function init() {
   try {
-    await updateTaskEvent(
-      "661f994553c6f81847f63e0d",
-      "661fd0290b2a818d0ac2cd09",
-      "edl_process",
-      {
-        status: "SUCCESS",
-        output: {
-          output_path:
-            "projects/project123/timeline/edlfile-e6ed2fef-5741-45e4-814f-295208e886f5.edl_output.mp4-50189cf8-ab17-471d-8ced-5cea82173167.mp4",
-          bucket: "vidsyncro-videos-bucket",
-        },
-      }
-    );
+    await updateTaskEvent(TASK.project_id, TASK.task_id, TASK.event, {
+      status: "SUCCESS",
+      output: {
+        output_path: TASK.output_path,
+        bucket: VIDEO_BUCKET,
+      },
+    });
 
     await uploadVideos()
       .then(() => {

@@ -16,13 +16,13 @@ const s3Client = new S3Client({
 });
 const uploadsFolderDocker = "/app/uploads/";
 const edlFolderDocker = "/app/parsedEDL/";
-
+const TASK = JSON.parse(process.env.TASK);
 async function listRequiredVideosS3() {
   const clipNames = await readEdl();
   const requiredVideos = [];
 
   for (const clipName of clipNames) {
-    const prefix = `projects/files/${clipName}`;
+    const prefix = `projects/${TASK.project_id}/files/${clipName}`;
     const command = new ListObjectsCommand({
       Bucket: "assets-edl",
       Prefix: prefix,
