@@ -5,12 +5,13 @@ const {
   GetObjectCommand,
   ListObjectsCommand,
 } = require("@aws-sdk/client-s3");
-
-const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { connectDb } = require("../connectdb");
 const { writeFile } = require("fs");
-
+//const Project = require("../models/Project.js");
+//const { registerProject } = require("../models/registerproejct.js");
+const { mongoose } = require("mongoose");
 const edlFolderDocker = "/app/parsedEDL/";
-
+const updateTaskEvent = require("../models/updateproject.js");
 const s3Client = new S3Client({
   credentials: {
     accessKeyId: "",
@@ -19,36 +20,27 @@ const s3Client = new S3Client({
   region: "ap-south-1",
 });
 
-const projectId = "project123";
-
-async function listEdlFiles() {
-  const prefix = `projects/${projectId}/timeline/edlfile`;
-  const command = new ListObjectsCommand({
-    Bucket: "assets-edl",
-    Prefix: prefix,
-    MaxKeys: 1,
+const projectId = process.env.PROJECT_ID;
+const edlFileName = process.env.EDL_FILE_NAME;
+const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
+const edlFile = `projects/${projectId}/timeline/${edlFileName}`;
+const mongoDbURL = process.env.MONGO_DB_URL;
+const TASK = JSON.parse(process.env.TASK);
+// //connecting database
+connectDb(mongoDbURL, MONGO_DB_NAME)
+  .then(() => {
+    console.log("Succefully connected to mongodb database");
+  })
+  .catch((err) => {
+    console.log("cant connect to db damn ", err);
   });
-
-  try {
-    const response = await s3Client.send(command);
-    if (response.Contents) {
-      const filenames = response.Contents.map((c) => c.Key);
-      return filenames;
-    } else {
-      return "No EDL files found.";
-    }
-  } catch (error) {
-    console.error("Error:", error);
-    return "Error occurred while listing EDL files.";
-  }
-}
 
 async function getObjectUrl(key) {
   const command = new GetObjectCommand({
     Bucket: "assets-edl",
     Key: key,
   });
-  const url = await getSignedUrl(s3Client, command);
+  const url = await s3Client.send(command);
   return url;
 }
 
@@ -96,36 +88,82 @@ function parseEDL(edlContent) {
 
 async function downloadAndParseEDLFiles() {
   try {
-    const edlFiles = await listEdlFiles();
+    console.log("Processing EDL file:", edlFile);
+    const edlContentResponse = await getObjectUrl(edlFile);
+    let edlContent = "";
+    edlContentResponse.Body.on("data", (chunck) => {
+      edlContent += chunck;
+    });
 
-    for (const filename of edlFiles) {
-      console.log("Processing EDL file:", filename);
-      const edlContent = await getObjectUrl(filename);
-      console.log(edlContent);
-      const response = await fetch(edlContent);
-      const edlContentText = await response.text();
-      const parsedEDL = parseEDL(edlContentText);
+    edlContentResponse.Body.on("end", async () => {
+      const parsedEDL = parseEDL(edlContent);
 
       if (parsedEDL.title === "") {
         console.log(
-          `Couldn't fetch file ${filename} as it may be empty or untraceable`
+          `Couldn't fetch file ${edlFile} as it may be empty or untraceable`
         );
       } else {
         console.log("Parsed EDL:", parsedEDL);
         const jsonData = JSON.stringify(parsedEDL, null, 2);
         await writeFile(
-          `${edlFolderDocker}${filename.split("/").pop()}.json`, //../parsedEDL/
+          `${edlFolderDocker}/${edlFile.split("/").pop()}.json`, //../parsedEDL/
           jsonData,
           (err) => {
             if (err) throw err;
             console.log("The file has been saved!");
+            // try {
+            //   console.log("ye title hai", parsedEDL.title);
+            //   // await registerProject(
+            //   //   "Vidsyncro1",
+            //   //   "in this project we are editing videos"
+            //   //   // ["edl-processing", edlFile, "rrr"]
+            //   // );
+            // } catch (error) {
+            //   console.error("Error registering project:", error);
+            // }
           }
         );
       }
-    }
+    });
   } catch (error) {
     console.error("Error:", error);
   }
 }
 
-downloadAndParseEDLFiles();
+//const TASK = JSON.parse(process.env.TASK);
+
+async function init() {
+  try {
+    await updateTaskEvent(TASK.project_id, TASK.task_id, TASK.event, {
+      status: "PENDING..",
+      output: {
+        output_path: TASK.output_path,
+        bucket: VIDEO_BUCKET,
+      },
+    });
+
+    await downloadAndParseEDLFiles()
+      .then(() => {
+        console.log("Downloading and parsing of EDL files completed");
+      })
+      .catch((err) => {
+        console.log(
+          "Could not complete Downloading and parsing of EDL fies: ",
+          err
+        );
+      });
+  } catch (error) {
+    console.log(error.message);
+    throw error;
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+init()
+  .then(() => {
+    console.log("Task succesfully went to pending state");
+  })
+  .catch((err) => {
+    console.log("Task Failed to go on pending state: ", err);
+  });
