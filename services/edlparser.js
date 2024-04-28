@@ -12,10 +12,10 @@ const s3Client = new S3Client({
 });
 
 const TASK = JSON.parse(process.env.TASK);
-const projectId = TASK.project_id;
+
 const edlFileName = process.env.TASK.resource_path;
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
-const edlFile = `projects/${projectId}/timeline/${edlFileName}`;
+const edlFile = `projects/${TASK.project_id}/timeline/${edlFileName}`;
 const mongoDbURL = process.env.MONGO_DB_URL;
 const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
 // //connecting database
