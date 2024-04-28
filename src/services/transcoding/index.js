@@ -17,6 +17,7 @@ const LOCAL_OUTDIR = resolve(process.cwd(), "output");
     event,
     resource_path,
     output_folder
+    output_path
     timestamp
   }
 */
@@ -37,19 +38,31 @@ async function init() {
       },
     });
 
-    const stream = await getVideoURL(TASK.resource_path, VIDEO_BUCKET);
+    try {
+      const stream = await getVideoURL(TASK.resource_path, VIDEO_BUCKET);
 
-    await mp4ToDash(stream, LOCAL_OUTDIR);
+      await mp4ToDash(stream, LOCAL_OUTDIR);
 
-    await uploadFolder(TASK.output_path, LOCAL_OUTDIR, VIDEO_BUCKET);
+      await uploadFolder(TASK.output_path, LOCAL_OUTDIR, VIDEO_BUCKET);
 
-    await updateEventInTask(TASK.project_id, TASK.task_id, TASK.event, {
-      status: "SUCCESS",
-      output: {
-        output_path: TASK.output_path,
-        bucket: VIDEO_BUCKET,
-      },
-    });
+      await updateEventInTask(TASK.project_id, TASK.task_id, TASK.event, {
+        status: "SUCCESS",
+        output: {
+          output_path: TASK.output_path,
+          bucket: VIDEO_BUCKET,
+        },
+      });
+    } catch (error) {
+      await updateEventInTask(TASK.project_id, TASK.task_id, TASK.event, {
+        status: "FAILURE",
+        output: {
+          output_path: TASK.output_path,
+          bucket: VIDEO_BUCKET,
+        },
+      });
+
+      throw error;
+    }
   } catch (error) {
     console.log(error.message);
     throw error;

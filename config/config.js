@@ -3,6 +3,7 @@ export const segments = {
   edited_videos: "edited_videos",
   timeline_videos: "timeline_videos",
   production_videos: "production_videos",
+  dash: "dash",
 };
 
 export const tasks = {
@@ -28,8 +29,8 @@ export const eventDetails = {
   [events.transcoding]: {
     task_definition: process.env.TRANSCODING_TASK,
     task_image: process.env.TRANSCODING_TASK_IMAGE,
-    output_directory: "dash",
-    event: "transcoding",
+    output_directory: segments.dash,
+    event: events.transcoding,
   },
 };
 
