@@ -8,15 +8,12 @@ const { join } = require("path");
 const { readdirSync } = require("fs");
 
 const s3Client = new S3Client({
-  credentials: {
-    accessKeyId: "",
-    secretAccessKey: "",
-  },
   region: "ap-south-1",
 });
 const uploadsFolderDocker = "/app/uploads/";
 const edlFolderDocker = "/app/parsedEDL/";
 const TASK = JSON.parse(process.env.TASK);
+const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
 async function listRequiredVideosS3() {
   const clipNames = await readEdl();
   const requiredVideos = [];
@@ -24,7 +21,7 @@ async function listRequiredVideosS3() {
   for (const clipName of clipNames) {
     const prefix = `projects/${TASK.project_id}/files/${clipName}`;
     const command = new ListObjectsCommand({
-      Bucket: "assets-edl",
+      Bucket: VIDEO_BUCKET,
       Prefix: prefix,
     });
     try {
@@ -37,6 +34,7 @@ async function listRequiredVideosS3() {
       }
     } catch (error) {
       console.error("Error:", error);
+
       return "Error occurred while listing Video files.";
     }
   }
@@ -66,12 +64,13 @@ async function downloadAndWriteVideos() {
     console.log("All videos downloaded successfully");
   } catch (err) {
     console.error(`Error downloading videos:`, err);
+    throw err;
   }
 }
 
 async function downloadVideo(key, filePath) {
   const command = new GetObjectCommand({
-    Bucket: "assets-edl",
+    Bucket: VIDEO_BUCKET,
     Key: key,
   });
 
@@ -84,6 +83,7 @@ async function downloadVideo(key, filePath) {
     console.log(`Downloaded ${key} to ${filePath}`);
   } catch (error) {
     console.error("Error downloading video:", error);
+    throw error;
   }
 }
 
@@ -105,6 +105,7 @@ async function readEdl() {
     }
   } catch (err) {
     console.error("Error reading EDL files:", error);
+    throw err;
   }
   return clipNames;
 }

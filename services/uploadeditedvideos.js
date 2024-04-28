@@ -3,21 +3,18 @@ const { randomUUID } = require("crypto");
 const { readdirSync, statSync, createReadStream } = require("fs");
 const updateTaskEvent = require("../models/updateproject.js");
 const s3Client = new S3Client({
-  credentials: {
-    accessKeyId: "",
-    secretAccessKey: "",
-  },
   region: "ap-south-1",
 });
 
 const TASK = JSON.parse(process.env.TASK);
+const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
 const editedVideosDirectory = "/app/editedvideos/";
 async function putObject(filename) {
   const key = `projects/project${
     TASK.project_id
-  }/timeline/${filename}-${randomUUID()}.mp4`;
+  }/timeline/${filename}_${randomUUID()}.mp4`;
   const command = new PutObjectCommand({
-    Bucket: "assets-edl",
+    Bucket: VIDEO_BUCKET,
     Key: key,
     Body: createReadStream(`${editedVideosDirectory}/${filename}`),
   });
@@ -27,7 +24,8 @@ async function putObject(filename) {
     console.log(response);
     return response;
   } catch (err) {
-    console.error(err);
+    //console.error(err);
+    throw err;
   }
 }
 
@@ -45,6 +43,7 @@ async function uploadVideos() {
     console.log("All videos uploaded successfully.");
   } catch (error) {
     console.error("Error uploading videos:", error);
+    throw error;
   }
 }
 
@@ -64,6 +63,7 @@ async function init() {
       })
       .catch((err) => {
         console.log("Could not complete the Rough Cut Edit: ", err);
+        throw err;
       });
   } catch (error) {
     console.log(error.message);
@@ -79,4 +79,5 @@ init()
   })
   .catch((err) => {
     console.log("Task Failed to Succed: ", err);
+    throw err;
   });

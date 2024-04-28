@@ -1,31 +1,23 @@
 //this code fetches all edl file urls from S3, and parses EDL files one by one and store it locally
 
-const {
-  S3Client,
-  GetObjectCommand,
-  ListObjectsCommand,
-} = require("@aws-sdk/client-s3");
+const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { connectDb } = require("../connectdb");
 const { writeFile } = require("fs");
-//const Project = require("../models/Project.js");
-//const { registerProject } = require("../models/registerproejct.js");
+
 const { mongoose } = require("mongoose");
 const edlFolderDocker = "/app/parsedEDL/";
 const updateTaskEvent = require("../models/updateproject.js");
 const s3Client = new S3Client({
-  credentials: {
-    accessKeyId: "",
-    secretAccessKey: "",
-  },
   region: "ap-south-1",
 });
 
 const TASK = JSON.parse(process.env.TASK);
 const projectId = TASK.project_id;
-const edlFileName = process.env.EDL_FILE_NAME;
+const edlFileName = process.env.TASK.resource_path;
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
 const edlFile = `projects/${projectId}/timeline/${edlFileName}`;
 const mongoDbURL = process.env.MONGO_DB_URL;
+const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
 // //connecting database
 connectDb(mongoDbURL, MONGO_DB_NAME)
   .then(() => {
@@ -33,11 +25,12 @@ connectDb(mongoDbURL, MONGO_DB_NAME)
   })
   .catch((err) => {
     console.log("cant connect to db damn ", err);
+    throw err;
   });
 
 async function getObjectUrl(key) {
   const command = new GetObjectCommand({
-    Bucket: "assets-edl",
+    Bucket: VIDEO_BUCKET,
     Key: key,
   });
   const url = await s3Client.send(command);
@@ -127,14 +120,14 @@ async function downloadAndParseEDLFiles() {
     });
   } catch (error) {
     console.error("Error:", error);
+    throw error;
   }
 }
-
 
 async function init() {
   try {
     await updateTaskEvent(TASK.project_id, TASK.task_id, TASK.event, {
-      status: "PENDING..",
+      status: "PENDING",
       output: {
         output_path: TASK.output_path,
         bucket: VIDEO_BUCKET,
@@ -150,6 +143,7 @@ async function init() {
           "Could not complete Downloading and parsing of EDL fies: ",
           err
         );
+        throw err;
       });
   } catch (error) {
     console.log(error.message);
@@ -165,4 +159,5 @@ init()
   })
   .catch((err) => {
     console.log("Task Failed to go on pending state: ", err);
+    throw err;
   });
