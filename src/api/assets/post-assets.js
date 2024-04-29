@@ -85,7 +85,7 @@ export const handler = async (event) => {
     const randomId = uuid().replace("-", "");
 
     const urls = await Promise.all(
-      files.map((file) => {
+      files.map(async (file) => {
         const input = {
           Bucket: VIDEO_BUCKET,
           Key: `${file.project_id}/${file.segment}/${randomId}_${file.name}`,
@@ -93,9 +93,14 @@ export const handler = async (event) => {
 
         const command = new PutObjectCommand(input);
 
-        return getSignedUrl(s3Client, command, {
+        const url = await getSignedUrl(s3Client, command, {
           expiresIn: URL_EXPIRATION_SECONDS,
         });
+
+        return {
+          url,
+          ...input,
+        };
       })
     );
 
@@ -114,5 +119,7 @@ export const handler = async (event) => {
       },
       500
     );
+  } finally {
+    await mongoose.disconnect();
   }
 };

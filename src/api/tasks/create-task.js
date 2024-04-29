@@ -10,12 +10,6 @@ import { z } from "zod";
 
 const SNS_TOPIC = process.env.SNS_TOPIC;
 
-connectDb()
-  .then(() => console.log("Connected to mongodb"))
-  .catch(() => {
-    console.log("Failed to connect to mongodb");
-  });
-
 /*
   INPUT: 
 
@@ -92,6 +86,8 @@ export async function handler(event, context) {
     context.callbackWaitsForEmptyEventLoop = false;
 
     console.log("Received event: ", log(event));
+
+    await connectDb();
 
     const parsed = createTaskParameter.safeParse(JSON.parse(event.body));
 
@@ -177,5 +173,7 @@ export async function handler(event, context) {
       },
       500
     );
+  } finally {
+    await mongoose.disconnect();
   }
 }

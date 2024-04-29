@@ -24,14 +24,12 @@ const getAssetsParameter = z.object({
   }),
 });
 
-connectDb()
-  .then(() => console.log("Connected to mongodb"))
-  .catch(() => {
-    console.log("Failed to connect to mongodb");
-  });
-
-export const handler = async (event) => {
+export const handler = async (event, context) => {
   try {
+    context.callbackWaitsForEmptyEventLoop = false;
+
+    await connectDb();
+
     console.log("Received event: ", log(event));
 
     const parsed = getAssetsParameter.safeParse(event.queryStringParameters);
@@ -100,5 +98,7 @@ export const handler = async (event) => {
       },
       500
     );
+  } finally {
+    await mongoose.disconnect();
   }
 };

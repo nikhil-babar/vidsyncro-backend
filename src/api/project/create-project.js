@@ -3,6 +3,7 @@ import Project from "../../models/Project.js";
 import log from "../../utils/log.js";
 import { error, success } from "../../utils/response.js";
 import { z } from "zod";
+import mongoose from "mongoose";
 
 connectDb()
   .then(() => console.log("Connected to mongodb"))
@@ -27,6 +28,8 @@ const createProjectParameters = z
 export async function handler(event, context) {
   try {
     context.callbackWaitsForEmptyEventLoop = false;
+
+    await connectDb();
 
     console.log("Received event: ", log(event));
 
@@ -66,5 +69,7 @@ export async function handler(event, context) {
       },
       500
     );
+  } finally {
+    await mongoose.disconnect();
   }
 }

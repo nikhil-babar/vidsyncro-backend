@@ -8,7 +8,7 @@ import uploadFolder from "../../utils/upload-folder-s3.js";
 import connectDb from "../../utils/mongo-connection.js";
 import updateTaskEvent from "../transcoding/update-task.js";
 import mongoose from "mongoose";
-// import generateThumnail from "./generate-thumnail.js";
+import generateThumnail from "./generate-thumnail.js";
 
 const LOCAL_OUTDIR = resolve(process.cwd(), "output");
 const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
@@ -25,8 +25,11 @@ connectDb()
 async function init() {
   try {
     await updateTaskEvent(TASK.project_id, TASK.task_id, TASK.event, {
-      bucket: VIDEO_BUCKET,
-      vtt: `${TASK.output_path}/subtitle.vtt`,
+      status: "PENDING",
+      output: {
+        bucket: VIDEO_BUCKET,
+        vtt: `${TASK.output_path}/subtitle.vtt`,
+      },
     });
 
     await mkdir(LOCAL_OUTDIR);
@@ -47,26 +50,36 @@ async function init() {
 
     console.log("Generated text: ", text);
 
-    // await generateThumnail(
-    //   text.title,
-    //   text.description,
-    //   text.thumbnail,
-    //   LOCAL_OUTDIR
-    // );
+    await generateThumnail(
+      text.title,
+      text.description,
+      text.thumbnail,
+      LOCAL_OUTDIR
+    );
 
-    // console.log("Generated thumbnail");
+    console.log("Generated thumbnail");
 
     await uploadFolder(TASK.output_path, LOCAL_OUTDIR, VIDEO_BUCKET);
 
     console.log("Uploaded to s3..");
 
     await updateTaskEvent(TASK.project_id, TASK.task_id, TASK.event, {
-      bucket: VIDEO_BUCKET,
-      vtt: `${TASK.output_path}/subtitle.vtt`,
-      ...text,
+      status: "SUCCESS",
+      output: {
+        bucket: VIDEO_BUCKET,
+        vtt: `${TASK.output_path}/subtitle.vtt`,
+        ...text,
+      },
     });
   } catch (error) {
-    throw error;
+    try {
+      await updateTaskEvent(TASK.project_id, TASK.task_id, TASK.event, {
+        status: "FAILURE",
+        output: {},
+      });
+    } catch (error) {
+      console.log("Error while updating database: ", error.message);
+    }
   } finally {
     await mongoose.disconnect();
   }

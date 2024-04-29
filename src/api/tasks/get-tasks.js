@@ -16,17 +16,11 @@ const getTasksParameter = z
   })
   .strict();
 
-connectDb()
-  .then(() => {
-    console.log("Connected to mongodb");
-  })
-  .catch((err) => {
-    console.log("Error while connecting to mongodb: ", err.message);
-  });
-
 export const handler = async (event, context) => {
   try {
     context.callbackWaitsForEmptyEventLoop = false;
+
+    await connectDb();
 
     console.log("Received event: ", log(event));
 
@@ -72,5 +66,7 @@ export const handler = async (event, context) => {
       },
       500
     );
+  } finally {
+    await mongoose.disconnect();
   }
 };
