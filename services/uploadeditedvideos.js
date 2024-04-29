@@ -10,9 +10,7 @@ const TASK = JSON.parse(process.env.TASK);
 const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
 const editedVideosDirectory = "/app/editedvideos/";
 async function putObject(filename) {
-  const key = `projects/project${
-    TASK.project_id
-  }/timeline/${filename}_${randomUUID()}.mp4`;
+  const key = `${TASK.project_id}/timeline_videos/${filename}.mp4`;
   const command = new PutObjectCommand({
     Bucket: VIDEO_BUCKET,
     Key: key,

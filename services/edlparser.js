@@ -15,7 +15,7 @@ const TASK = JSON.parse(process.env.TASK);
 
 const edlFileName = process.env.TASK.resource_path;
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
-const edlFile = `projects/${TASK.project_id}/timeline/${edlFileName}`;
+const edlFile = `${TASK.project_id}/timeline_videos/${edlFileName}`;
 const mongoDbURL = process.env.MONGO_DB_URL;
 const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
 // //connecting database

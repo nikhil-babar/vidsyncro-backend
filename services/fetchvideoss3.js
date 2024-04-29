@@ -19,7 +19,7 @@ async function listRequiredVideosS3() {
   const requiredVideos = [];
 
   for (const clipName of clipNames) {
-    const prefix = `projects/${TASK.project_id}/files/${clipName}`;
+    const prefix = `${TASK.project_id}/assets/${clipName}`;
     const command = new ListObjectsCommand({
       Bucket: VIDEO_BUCKET,
       Prefix: prefix,
