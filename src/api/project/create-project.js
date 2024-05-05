@@ -4,6 +4,9 @@ import log from "../../utils/log.js";
 import { error, success } from "../../utils/response.js";
 import { z } from "zod";
 import mongoose from "mongoose";
+import getUser from "../../utils/get-user.js";
+import User from "../../models/User.js";
+import jwt from "jsonwebtoken";
 
 connectDb()
   .then(() => console.log("Connected to mongodb"))
@@ -13,9 +16,6 @@ connectDb()
 
 const createProjectParameters = z
   .object({
-    user_id: z.string({
-      required_error: "User id must be a string",
-    }),
     title: z.string({
       required_error: "Project title must be a string",
     }),
@@ -24,6 +24,8 @@ const createProjectParameters = z
     }),
   })
   .strict();
+
+const SECRET_KEY = process.env.SECRET_KEY;
 
 export async function handler(event, context) {
   try {
@@ -44,21 +46,58 @@ export async function handler(event, context) {
       );
     }
 
-    const { title, description, user_id } = parsed.data;
+    const { title, description } = parsed.data;
+    let parsedToken = null;
+
+    try {
+      parsedToken = await getUser(event);
+    } catch (err) {
+      return error(
+        {
+          message: "Invalid api request",
+        },
+        403
+      );
+    }
+
+    const account = await User.findById(parsedToken._id);
+
+    console.log("Account retrieved: ", log(account._doc));
 
     const newProject = new Project({
-      user_id,
+      user_id: account._id,
       title,
       description,
     });
 
     await newProject.save();
 
+    console.log("Created new project: ", log(newProject._doc));
+
+    account.projects = [...account.projects, newProject._id];
+
+    await account.save();
+
+    console.log("Updated user: ", log(account._doc));
+
+    const accountToken = jwt.sign(account._doc, SECRET_KEY, {
+      expiresIn: "10h",
+    });
+
+    console.log("Token generated: ", accountToken);
+
     return success(
       {
         data: newProject,
       },
-      200
+      200,
+      {
+        user: {
+          value: accountToken,
+          path: "/",
+          httpOnly: true,
+        },
+      }
     );
   } catch (err) {
     console.log(err.message);

@@ -7,15 +7,13 @@ import { segments, segmentToTaskMapping } from "../../../config/config.js";
 import mongoose from "mongoose";
 import Project from "../../models/Project.js";
 import connectDb from "../../utils/mongo-connection.js";
+import getUser from "../../utils/get-user.js";
 
 const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
 
 const getAssetsParameter = z.object({
   project_id: z.custom((val) => mongoose.isObjectIdOrHexString(val), {
     message: "Please provide a valid project id",
-  }),
-  user_id: z.string({
-    required_error: "User id must be a string",
   }),
   segment: z.enum(Object.values(segments), {
     required_error: `Segment must be a validate partition: ${Object.values(
@@ -43,7 +41,22 @@ export const handler = async (event, context) => {
       );
     }
 
-    const { project_id, segment, user_id } = parsed.data;
+    const { project_id, segment } = parsed.data;
+
+    let parsedToken = null;
+
+    try {
+      parsedToken = await getUser(event);
+    } catch (err) {
+      return error(
+        {
+          message: "Invalid api request",
+        },
+        403
+      );
+    }
+
+    console.log("Retrieved Token: ", log(parsedToken));
 
     if (segment.localeCompare(segments.assets) === 0) {
       const input = {
@@ -66,7 +79,7 @@ export const handler = async (event, context) => {
     const task_type = segmentToTaskMapping[segment];
 
     const project = await Project.findOne({
-      user_id,
+      user_id: parsedToken._id,
       _id: new mongoose.Types.ObjectId(project_id),
     });
 

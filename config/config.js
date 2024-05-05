@@ -10,21 +10,25 @@ export const segments = {
 export const tasks = {
   publish_to_edited_videos: "publish_to_edited_videos",
   publish_to_production_videos: "publish_to_production_videos",
+  publish_to_timeline_videos: "publish_to_timeline_videos",
 };
 
 export const events = {
   transcoding: "transcoding",
   transcription: "transcription",
+  edl_processing: "edl_processing",
 };
 
 export const segmentToTaskMapping = {
   edited_videos: tasks.publish_to_edited_videos,
   production_videos: tasks.publish_to_production_videos,
+  timeline_videos: tasks.publish_to_timeline_videos,
 };
 
 export const taskToEventMapping = {
   publish_to_production_videos: [events.transcoding],
   publish_to_edited_videos: [events.transcoding, events.transcription],
+  publish_to_timeline_videos: [events.edl_processing],
 };
 
 export const eventDetails = {
@@ -39,6 +43,12 @@ export const eventDetails = {
     task_image: "transcription-task",
     output_directory: segments.video_assets,
     event: events.transcription,
+  },
+  [events.edl_processing]: {
+    task_definition: "edl-processing-task",
+    task_image: "edl-processing-task",
+    output_directory: segments.timeline_videos,
+    event: events.edl_processing,
   },
 };
 

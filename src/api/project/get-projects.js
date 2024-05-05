@@ -2,16 +2,8 @@ import connectDb from "../../utils/mongo-connection.js";
 import Project from "../../models/Project.js";
 import log from "../../utils/log.js";
 import { error, success } from "../../utils/response.js";
-import { z } from "zod";
 import mongoose from "mongoose";
-
-const createProjectParameters = z
-  .object({
-    user_id: z.string({
-      required_error: "Plz provide a userId",
-    }),
-  })
-  .strict();
+import getUser from "../../utils/get-user.js";
 
 export async function handler(event, context) {
   try {
@@ -21,32 +13,22 @@ export async function handler(event, context) {
 
     console.log("Received event: ", log(event));
 
-    const parsed = createProjectParameters.safeParse(
-      event.queryStringParameters
-    );
+    let parsedToken = null;
 
-    if (!parsed.success) {
+    try {
+      parsedToken = await getUser(event);
+    } catch (err) {
       return error(
         {
-          message: parsed.error,
+          message: "Invalid api request",
         },
-        422
+        403
       );
     }
 
-    const { user_id } = parsed.data;
+    const projects = await Project.find({ user_id: parsedToken._id });
 
-    const projects = await Project.find(
-      {
-        user_id: user_id,
-      },
-      {},
-      {
-        projection: {
-          tasks: 0,
-        },
-      }
-    );
+    console.log("Retrived projects: ", projects);
 
     return success(
       {

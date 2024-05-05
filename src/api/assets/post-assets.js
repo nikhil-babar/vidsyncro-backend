@@ -6,6 +6,8 @@ import { v4 as uuid } from "uuid";
 import { z } from "zod";
 import { segments } from "../../../config/config.js";
 import mongoose from "mongoose";
+import getUser from "../../utils/get-user.js";
+import log from "../../utils/log.js";
 
 const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
 const URL_EXPIRATION_SECONDS = process.env.URL_EXPIRATION_SECONDS;
@@ -79,6 +81,21 @@ export const handler = async (event) => {
         422
       );
     }
+
+    let parsedToken = null;
+
+    try {
+      parsedToken = await getUser(event);
+    } catch (err) {
+      return error(
+        {
+          message: "Invalid api request",
+        },
+        403
+      );
+    }
+
+    console.log("Retrieved token: ", log(parsedToken));
 
     const { files } = parsed.data;
 
