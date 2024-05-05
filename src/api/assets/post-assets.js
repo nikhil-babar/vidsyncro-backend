@@ -6,6 +6,8 @@ import { v4 as uuid } from "uuid";
 import { z } from "zod";
 import { segments } from "../../../config/config.js";
 import mongoose from "mongoose";
+import getUser from "../../utils/get-user.js";
+import log from "../../utils/log.js";
 
 const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
 const URL_EXPIRATION_SECONDS = process.env.URL_EXPIRATION_SECONDS;
@@ -80,12 +82,27 @@ export const handler = async (event) => {
       );
     }
 
+    let parsedToken = null;
+
+    try {
+      parsedToken = await getUser(event);
+    } catch (err) {
+      return error(
+        {
+          message: "Invalid api request",
+        },
+        403
+      );
+    }
+
+    console.log("Retrieved token: ", log(parsedToken));
+
     const { files } = parsed.data;
 
     const randomId = uuid().replace("-", "");
 
     const urls = await Promise.all(
-      files.map((file) => {
+      files.map(async (file) => {
         const input = {
           Bucket: VIDEO_BUCKET,
           Key: `${file.project_id}/${file.segment}/${randomId}_${file.name}`,
@@ -93,9 +110,14 @@ export const handler = async (event) => {
 
         const command = new PutObjectCommand(input);
 
-        return getSignedUrl(s3Client, command, {
+        const url = await getSignedUrl(s3Client, command, {
           expiresIn: URL_EXPIRATION_SECONDS,
         });
+
+        return {
+          url,
+          ...input,
+        };
       })
     );
 
@@ -114,5 +136,7 @@ export const handler = async (event) => {
       },
       500
     );
+  } finally {
+    await mongoose.disconnect();
   }
 };

@@ -98,7 +98,9 @@ export const handler = async (event, context) => {
       try {
         const { output_directory, task_definition, task_image } =
           eventDetails[event];
-        const output_path = `${project_id}/${output_directory}/${file}`;
+        const output_path = `${project_id}/${output_directory}/${
+          file.split(".")[0]
+        }.mp4`;
 
         const config = {
           output_path,

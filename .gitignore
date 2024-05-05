@@ -1,3 +1,6 @@
+/node_modules
+/venv
+.env
 # package directories
 node_modules
 .aws-sam
@@ -7,6 +10,7 @@ jspm_packages
 .env.local
 *.yaml
 *.toml
+event.json
 
 commands
 

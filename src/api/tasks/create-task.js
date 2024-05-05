@@ -7,14 +7,9 @@ import { snsClient } from "../../utils/sns-client.js";
 import { PublishCommand } from "@aws-sdk/client-sns";
 import mongoose from "mongoose";
 import { z } from "zod";
+import getUser from "../../utils/get-user.js";
 
 const SNS_TOPIC = process.env.SNS_TOPIC;
-
-connectDb()
-  .then(() => console.log("Connected to mongodb"))
-  .catch(() => {
-    console.log("Failed to connect to mongodb");
-  });
 
 /*
   INPUT: 
@@ -73,9 +68,6 @@ const createTaskParameter = z
     project_id: z.custom((val) => mongoose.isObjectIdOrHexString(val), {
       message: "Please provide a valid project id",
     }),
-    user_id: z.string({
-      required_error: "User id must be a string",
-    }),
     task: z.enum(Object.keys(tasks), {
       required_error: `Task must be one of the following: ${Object.keys(
         tasks
@@ -93,6 +85,8 @@ export async function handler(event, context) {
 
     console.log("Received event: ", log(event));
 
+    await connectDb();
+
     const parsed = createTaskParameter.safeParse(JSON.parse(event.body));
 
     if (!parsed.success) {
@@ -104,10 +98,39 @@ export async function handler(event, context) {
       );
     }
 
-    const { project_id, user_id, task, resource_path } = parsed.data;
+    const { project_id, task, resource_path } = parsed.data;
+
+    let parsedToken = null;
+
+    try {
+      parsedToken = await getUser(event);
+    } catch (err) {
+      return error(
+        {
+          message: "Invalid api request",
+        },
+        403
+      );
+    }
+
+    console.log("Retrieved Token: ", log(parsedToken));
+
+    console.log(resource_path.split("/"));
+
+    if (
+      !parsedToken.projects?.includes(project_id) ||
+      resource_path.split("/")[0].localeCompare(project_id) !== 0
+    ) {
+      return error(
+        {
+          message: "You are not authorized to access this project",
+        },
+        422
+      );
+    }
 
     const project = await Project.findOne({
-      user_id,
+      user_id: parsedToken._id,
       _id: new mongoose.Types.ObjectId(project_id),
     });
 
@@ -120,13 +143,15 @@ export async function handler(event, context) {
       );
     }
 
+    console.log("Project retreived: ", log(project._doc));
+
     const task_id = new mongoose.Types.ObjectId();
 
     const input = {
       TopicArn: SNS_TOPIC,
       Message: JSON.stringify({
         project_id,
-        user_id,
+        user_id: parsedToken._id,
         task,
         task_id,
         resource_path,
@@ -164,7 +189,7 @@ export async function handler(event, context) {
 
     return success(
       {
-        data: project.tasks,
+        data: newTask,
       },
       200
     );
@@ -177,5 +202,7 @@ export async function handler(event, context) {
       },
       500
     );
+  } finally {
+    await mongoose.disconnect();
   }
 }
