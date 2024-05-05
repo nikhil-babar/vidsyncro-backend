@@ -54,7 +54,7 @@ export async function handler(event, context) {
 
     console.log("Account retrieved: ", log(account));
 
-    const updatedAccount = await User.findByIdAndUpdate(account.id, {
+    const updatedAccount = await User.findByIdAndUpdate(account._id, {
       verified: true,
     });
 
