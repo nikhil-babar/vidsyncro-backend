@@ -16,6 +16,8 @@ export default async function getUser(event) {
 
     console.log("Extracted token: ", log(user));
 
+    if (!user || !user.verified) throw new Error("User not verifed");
+
     return user;
   } catch (err) {
     console.log("Error while retrieving the user: ", err.message);
