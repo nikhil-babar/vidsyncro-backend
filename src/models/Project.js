@@ -31,7 +31,29 @@ export const ProjectSchema = new Schema({
         },
       },
     ],
-
+    default: [],
+  },
+  invitations: {
+    type: [
+      {
+        email: {
+          type: String,
+          required: true,
+        },
+        message: {
+          type: String,
+          required: true,
+        },
+        project_id: {
+          type: String,
+          required: true,
+        },
+        accepted: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
     default: [],
   },
 });

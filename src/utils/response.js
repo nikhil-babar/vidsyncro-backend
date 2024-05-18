@@ -40,7 +40,7 @@ function formatCookies(cookies) {
 export function success(data, statusCode = 200, cookies = null) {
   const headers = {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": process.env.FRONTEND_END,
     "Access-Control-Allow-Credentials": true,
   };
 
