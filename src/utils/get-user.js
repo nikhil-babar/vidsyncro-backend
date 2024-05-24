@@ -5,18 +5,25 @@ const SECRET_KEY = process.env.SECRET_KEY;
 
 export default async function getUser(event) {
   try {
-    const cookie = event?.headers?.Cookie;
+    const cookies = event?.headers?.Cookie;
 
-    if (!cookie) throw new Error("No cookie available");
-    if (cookie.split("=")[0] != "user") throw new Error("No user cookie set");
+    if (!cookies) throw new Error("No cookies available");
 
-    const token = cookie.split("=")[1];
+    // Parse cookies
+    const cookiesArray = cookies.split(";").map((cookie) => cookie.trim());
+    const userCookie = cookiesArray.find((cookie) =>
+      cookie.startsWith("user=")
+    );
+
+    if (!userCookie) throw new Error("No user cookie set");
+
+    const token = userCookie.split("=")[1];
 
     const user = jwt.verify(token, SECRET_KEY);
 
     console.log("Extracted token: ", log(user));
 
-    if (!user || !user.verified) throw new Error("User not verifed");
+    if (!user || !user.verified) throw new Error("User not verified");
 
     return user;
   } catch (err) {

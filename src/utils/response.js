@@ -1,37 +1,16 @@
 function formatCookies(cookies) {
-  // Create an array of cookies strings
   return Object.entries(cookies).map(([key, value]) => {
+    // Set default values if they are not specified
+    const path = value.path ? value.path : "/";
+    const maxAge = value.maxAge ? value.maxAge : 86400; // 1 day in seconds
+
     let cookieString = `${encodeURIComponent(key)}=${encodeURIComponent(
       value.value
     )}`;
 
-    if (value.maxAge) {
-      cookieString += `; Max-Age=${value.maxAge}`;
-    }
-
-    if (value.expires) {
-      cookieString += `; Expires=${new Date(value.expires).toUTCString()}`;
-    }
-
-    if (value.path) {
-      cookieString += `; Path=${value.path}`;
-    }
-
-    if (value.domain) {
-      cookieString += `; Domain=${value.domain}`;
-    }
-
-    if (value.secure) {
-      cookieString += `; Secure`;
-    }
-
-    if (value.httpOnly) {
-      cookieString += `; HttpOnly`;
-    }
-
-    if (value.sameSite) {
-      cookieString += `; SameSite=${value.sameSite}`;
-    }
+    cookieString += `; Path=${path}`;
+    cookieString += `; Max-Age=${maxAge}`;
+    cookieString += `; HttpOnly`;
 
     return cookieString;
   });
@@ -41,7 +20,7 @@ export function success(data, statusCode = 200, cookies = null) {
   const headers = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": process.env.FRONTEND_END,
-    "Access-Control-Allow-Credentials": true,
+    "Access-Control-Allow-Credentials": "true",
   };
 
   if (cookies) {
@@ -67,8 +46,8 @@ export function error(error, statusCode = 500) {
     statusCode,
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Credentials": true,
+      "Access-Control-Allow-Origin": process.env.FRONTEND_END,
+      "Access-Control-Allow-Credentials": "true",
     },
   };
 }
