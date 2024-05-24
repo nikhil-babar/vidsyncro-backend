@@ -96,6 +96,7 @@ export async function handler(event, context) {
           value: accountToken,
           path: "/",
           httpOnly: true,
+          secure: true,
         },
       }
     );
