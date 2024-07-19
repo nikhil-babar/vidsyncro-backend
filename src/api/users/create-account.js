@@ -3,11 +3,10 @@ import log from "../../utils/log.js";
 import { error, success } from "../../utils/response.js";
 import { z } from "zod";
 import mongoose from "mongoose";
-import User from "../../models/User.js";
-import jwt from "jsonwebtoken";
 import sendEmail from "../../utils/send-email.js";
+import { createAccount, isEmailAvailable } from "../../utils/users/users.js";
+import { generateToken } from "../../utils/users/tokens.js";
 
-const SECRET_KEY = process.env.SECRET_KEY;
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
 
 const createAccountParameters = z
@@ -49,9 +48,9 @@ export async function handler(event, context) {
 
     const { username, password, email } = parsed.data;
 
-    const exists = await User.exists({ email: email });
+    const available = await isEmailAvailable(email);
 
-    if (exists) {
+    if (!available) {
       return error(
         {
           message: `Account already exists with email: ${email}`,
@@ -60,48 +59,36 @@ export async function handler(event, context) {
       );
     }
 
-    const account = new User({
-      username,
-      password,
-      email,
-    });
+    const account = await createAccount(username, email, password);
 
-    await account.save();
+    console.log("User account created: ", log(account));
 
-    console.log("User account created");
+    // Note: This token will be used for first time singin and email verfication
+    const verificationToken = generateToken(account, "10h");
 
-    const accountToken = jwt.sign(account._doc, SECRET_KEY, {
-      expiresIn: "10h",
-    });
+    console.log("Verification token generated: ", log(verificationToken));
 
-    console.log("Auth token generated: ", accountToken);
+    // Note: Email can be resend if it fails.
+    // Todo: Create a seperate route for email resend option.
+    try {
+      const res = await sendEmail(email, {
+        subject: "Email verification: Vidsyncro",
+        body: `Link: ${API_GATEWAY_URL}/user/v1/verify?code=${verificationToken}`,
+      });
 
-    const res = await sendEmail(email, {
-      subject: "Email verification: Vidsyncro",
-      body: `Link: ${API_GATEWAY_URL}/user/v1/verify?code=${accountToken}`,
-    });
-
-    console.log("Email pushed: ", log(res));
+      console.log("Email pushed: ", log(res));
+    } catch (error) {}
 
     return success(
       {
         data: {
-          ...account._doc,
+          ...account,
           password: undefined,
         },
       },
-      200,
-      {
-        user: {
-          value: accountToken,
-          path: "/",
-          httpOnly: true,
-        },
-      }
+      200
     );
   } catch (err) {
-    console.log(err.message);
-
     return error(
       {
         message: "Internal error",
