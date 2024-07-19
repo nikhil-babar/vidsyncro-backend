@@ -11,6 +11,16 @@ export const generateToken = (payload, expiresIn) => {
   return token;
 };
 
+export const verifyToken = (token) => {
+  try {
+    const account = jwt.verify(token, SECRET_KEY);
+    return account;
+  } catch (err) {
+    console.log("Invalid token: ", token);
+    throw err;
+  }
+};
+
 export const generateAccessAndRefreshToken = (payload) => {
   const accessToken = generateToken(payload, ACCESS_TOKEN_EXPIRY);
   const refreshToken = generateToken(payload, REFRESH_TOKEN_EXPIRY);

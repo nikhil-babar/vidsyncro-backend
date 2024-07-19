@@ -12,6 +12,25 @@ export const isEmailAvailable = async (email) => {
   }
 };
 
+export const verifyAccount = async (account_id) => {
+  try {
+    const account = await User.findByIdAndUpdate(account_id, {
+      verified: true,
+    });
+
+    if (account.verified) {
+      throw new Error("link-already-used");
+    }
+
+    return account._doc;
+  } catch (error) {
+    console.log(
+      `Error while verifying the account with id: ${account_id} => ${error.message}`
+    );
+    throw error;
+  }
+};
+
 export const createAccount = async (username, email, password) => {
   try {
     const account = new User({
