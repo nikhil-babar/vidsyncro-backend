@@ -1,4 +1,5 @@
 import User from "../../models/User.js";
+import bcrypt from "bcryptjs";
 
 export const isEmailAvailable = async (email) => {
   try {
@@ -7,6 +8,18 @@ export const isEmailAvailable = async (email) => {
   } catch (error) {
     console.log(
       `Error while checking availabiltiy of email: ${email} => ${error.message}`
+    );
+    throw error;
+  }
+};
+
+export const getUserByEmail = async (email) => {
+  try {
+    const account = await User.findOne({ email: email });
+    return account._doc;
+  } catch (error) {
+    console.log(
+      `Error while find account for email: ${email} => ${error.message}`
     );
     throw error;
   }
@@ -33,9 +46,11 @@ export const verifyAccount = async (account_id) => {
 
 export const createAccount = async (username, email, password) => {
   try {
+    const hash = await bcrypt.hash(password, 10);
+
     const account = new User({
       username,
-      password,
+      password: hash,
       email,
     });
 
@@ -49,6 +64,18 @@ export const createAccount = async (username, email, password) => {
         email,
         password,
       }} => ${error.message}`
+    );
+    throw error;
+  }
+};
+
+export const isCorrectPassword = async (account, password) => {
+  try {
+    const res = await bcrypt.compare(password, account.password);
+    return res;
+  } catch (error) {
+    console.log(
+      `Error while verifying password for account: ${account} => ${error.message}`
     );
     throw error;
   }

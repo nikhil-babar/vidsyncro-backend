@@ -3,10 +3,8 @@ import log from "../../utils/log.js";
 import { error, success } from "../../utils/response.js";
 import { z } from "zod";
 import mongoose from "mongoose";
-import User from "../../models/User.js";
-import jwt from "jsonwebtoken";
-
-const SECRET_KEY = process.env.SECRET_KEY;
+import { getUserByEmail, isCorrectPassword } from "../../utils/users/users.js";
+import { generateAccessAndRefreshToken } from "../../utils/users/tokens.js";
 
 const signInParameters = z
   .object({
@@ -44,7 +42,7 @@ export async function handler(event, context) {
 
     const { password, email } = parsed.data;
 
-    const account = await User.findOne({ email });
+    const account = await getUserByEmail(email);
 
     if (!account) {
       return error(
@@ -57,34 +55,43 @@ export async function handler(event, context) {
 
     console.log("Account retrieved: ", log(account));
 
-    if (account.password.localeCompare(password) !== 0) {
+    if (!account.verified) {
+      console.log("Unverified account: ", log(account));
+      return error(
+        {
+          message: "Unverfied account",
+        },
+        404
+      );
+    }
+
+    if (!(await isCorrectPassword(account, password))) {
       return error(
         {
           message: "Password doesn't match",
         },
-        401
+        403
       );
     }
 
     console.log("Password matched");
 
-    const accountToken = jwt.sign(account._doc, SECRET_KEY, {
-      expiresIn: "10h",
-    });
+    const tokens = generateAccessAndRefreshToken(account);
 
-    console.log("Token generated: ", accountToken);
+    console.log("Tokens generated: ", log(tokens));
 
     return success(
       {
         data: {
-          ...account._doc,
+          ...account,
           password: undefined,
         },
+        access_token: tokens.accessToken,
       },
       200,
       {
         user: {
-          value: accountToken,
+          value: tokens.refreshToken,
           path: "/",
           httpOnly: true,
         },
