@@ -1,5 +1,10 @@
 import User from "../../models/User.js";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { error } from "../response.js";
+import log from "../log.js";
+
+const SECRET_KEY = process.env.SECRET_KEY;
 
 export const isEmailAvailable = async (email) => {
   try {
@@ -78,5 +83,48 @@ export const isCorrectPassword = async (account, password) => {
       `Error while verifying password for account: ${account} => ${error.message}`
     );
     throw error;
+  }
+};
+
+export const authMiddleware = (event, callback) => {
+  /*
+    callback: lambda callback to directly respond from the function and not catch the error in main code.
+    Note: throw the err after invoking callback because calling callback doesn't terminate the execution.
+  */
+  try {
+    const authHeader = event?.headers?.Authorization?.split(" ");
+
+    if (!authHeader || authHeader.length != 2) throw new Error("no-auth-token");
+
+    const token = authHeader[1];
+
+    let user = null;
+
+    try {
+      user = jwt.verify(token, SECRET_KEY);
+    } catch (err) {
+      console.log("Error while verifying token: ", err.message);
+      throw new Error("user-not-authorized");
+    }
+
+    console.log("Extracted token: ", log(user));
+
+    if (!user || !user.verified) throw new Error("user-not-verified");
+
+    return user;
+  } catch (err) {
+    console.log("Error while retrieving the user: ", err.message);
+
+    callback(
+      undefined,
+      error(
+        {
+          message: "user-not-authorized",
+        },
+        401
+      )
+    );
+
+    throw err;
   }
 };
