@@ -1,4 +1,4 @@
-import connectDb from "../../utils/mongo-connection.js";
+import connectDb from "../../utils/clients/mongo-connection.js";
 import log from "../../utils/log.js";
 import { error, success } from "../../utils/response.js";
 import { z } from "zod";

@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 
 export const ProjectSchema = new Schema({
   title: {
@@ -9,12 +9,29 @@ export const ProjectSchema = new Schema({
     type: String,
     required: true,
   },
-  user_id: {
-    type: String,
+  owner_id: {
+    type: mongoose.Schema.ObjectId,
+    ref: "User",
     required: true,
   },
-  editor_ids: {
-    type: String,
+  editors: {
+    type: [
+      {
+        id: {
+          type: mongoose.Schema.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        name: {
+          type: String,
+          required: true,
+        },
+        email: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
   },
 });
 

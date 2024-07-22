@@ -20,7 +20,7 @@ export const isEmailAvailable = async (email) => {
 
 export const getUserByEmail = async (email) => {
   try {
-    const account = await User.findOne({ email: email });
+    const account = await User.findOne({ email: email }, { projects: 0 });
     return account._doc;
   } catch (error) {
     console.log(
@@ -32,9 +32,13 @@ export const getUserByEmail = async (email) => {
 
 export const verifyAccount = async (account_id) => {
   try {
-    const account = await User.findByIdAndUpdate(account_id, {
-      verified: true,
-    });
+    const account = await User.findByIdAndUpdate(
+      account_id,
+      {
+        verified: true,
+      },
+      { projection: { projects: -1 } }
+    );
 
     if (account.verified) {
       throw new Error("link-already-used");

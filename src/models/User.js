@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Schema, model } from "mongoose";
 
 export const UserSchema = new Schema({
@@ -17,6 +18,27 @@ export const UserSchema = new Schema({
   verified: {
     type: Boolean,
     default: false,
+  },
+  projects: {
+    type: [
+      {
+        id: {
+          type: mongoose.Schema.ObjectId,
+          ref: "Project",
+          required: true,
+        },
+        title: {
+          type: String,
+          required: true,
+        },
+        access_type: {
+          type: String,
+          enum: ["owner", "editor"],
+          required: true,
+        },
+      },
+    ],
+    default: [],
   },
 });
 

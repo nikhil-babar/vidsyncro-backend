@@ -7,7 +7,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": {},
+  "dependencies": {
+    "mongoose": "^8.5.1"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC"
