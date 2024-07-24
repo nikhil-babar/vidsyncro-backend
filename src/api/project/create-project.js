@@ -34,6 +34,8 @@ export async function handler(event, context, callback) {
 
     const user = authMiddleware(event, callback);
 
+    console.log("User extracted: ", log(user));
+
     const project = await createProject(title, description, user._id);
 
     return success(

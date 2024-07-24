@@ -8,11 +8,10 @@ jspm_packages
 *.sh
 .env
 .env.local
-*.yaml
+sam.yaml
 *.toml
 event.json
 
-commands
 
 # Serverless directories
 serverless

@@ -1,16 +1,16 @@
-import { s3Client } from "../../utils/s3-client.js";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { success, error } from "../../utils/response.js";
 import { v4 as uuid } from "uuid";
 import { z } from "zod";
 import { segments } from "../../../config/config.js";
 import mongoose from "mongoose";
-import getUser from "../../utils/get-user.js";
 import log from "../../utils/log.js";
-
-const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
-const URL_EXPIRATION_SECONDS = process.env.URL_EXPIRATION_SECONDS;
+import {
+  authMiddleware,
+  isAuthorizedToAccessProject,
+} from "../../utils/users/users.js";
+import { parse } from "../../utils/parser.js";
+import { getUploadURL } from "../../utils/storage/get-signed-url.js";
+import connectDb from "../../utils/clients/mongo-connection.js";
 
 const postAssetsParameter = z.object({
   files: z
@@ -35,56 +35,51 @@ const postAssetsParameter = z.object({
     .min(1),
 });
 
-export const handler = async (event) => {
+export const handler = async (event, context, callback) => {
   try {
-    console.log("Request received: ", event);
+    context.callbackWaitsForEmptyEventLoop = false;
 
-    const parsed = postAssetsParameter.safeParse(JSON.parse(event.body));
+    await connectDb();
 
-    if (!parsed.success) {
+    console.log("Received event: ", log(event));
+
+    const { files } = parse(
+      JSON.parse(event.body),
+      postAssetsParameter,
+      callback
+    );
+
+    const user = authMiddleware(event, callback);
+
+    console.log("User extracted: ", log(user));
+
+    if (!(await isAuthorizedToAccessProject(user._id, files[0].project_id))) {
       return error(
         {
-          message: parsed.error,
-        },
-        422
-      );
-    }
-
-    let parsedToken = null;
-
-    try {
-      parsedToken = await getUser(event);
-    } catch (err) {
-      return error(
-        {
-          message: "Invalid api request",
+          message: "unauthorized-project-access",
         },
         403
       );
     }
 
-    console.log("Retrieved token: ", log(parsedToken));
-
-    const { files } = parsed.data;
-
-    const randomId = uuid().replace("-", "");
-
     const urls = await Promise.all(
       files.map(async (file) => {
-        const input = {
-          Bucket: VIDEO_BUCKET,
-          Key: `${file.project_id}/${file.segment}/${randomId}_${file.name}`,
-        };
+        const assetId = uuid().replace(/-/g, "");
+        const key = `${file.project_id}/${file.segment}/${assetId}_${file.name}`;
 
-        const command = new PutObjectCommand(input);
+        console.log("Key generated: ", key);
 
-        const url = await getSignedUrl(s3Client, command, {
-          expiresIn: URL_EXPIRATION_SECONDS,
+        const url = await getUploadURL(key, {
+          ...file,
+          asset_id: assetId,
+          key,
         });
+
+        console.log("Url generated: ", url);
 
         return {
           url,
-          ...input,
+          ...file,
         };
       })
     );

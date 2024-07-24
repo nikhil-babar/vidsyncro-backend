@@ -1,11 +1,22 @@
 import connectDb from "../../utils/clients/mongo-connection.js";
-import Project from "../../models/Project.js";
 import log from "../../utils/log.js";
 import { error, success } from "../../utils/response.js";
 import mongoose from "mongoose";
-import getUser from "../../utils/get-user.js";
+import { parse } from "../../utils/parser.js";
+import { authMiddleware } from "../../utils/users/users.js";
+import z from "zod";
+import { getProjects } from "../../utils/projects/projects.js";
 
-export async function handler(event, context) {
+const getProjectsParameters = z.object({
+  page_no: z.coerce.number({
+    required_error: "Page no required",
+  }),
+  page_size: z.coerce.number({
+    required_error: "Page size required",
+  }),
+});
+
+export async function handler(event, context, callback) {
   try {
     context.callbackWaitsForEmptyEventLoop = false;
 
@@ -13,22 +24,19 @@ export async function handler(event, context) {
 
     console.log("Received event: ", log(event));
 
-    let parsedToken = null;
+    const { page_no, page_size } = parse(
+      event.queryStringParameters,
+      getProjectsParameters,
+      callback
+    );
 
-    try {
-      parsedToken = await getUser(event);
-    } catch (err) {
-      return error(
-        {
-          message: "Invalid api request",
-        },
-        403
-      );
-    }
+    const user = authMiddleware(event, callback);
 
-    const projects = await Project.find({ user_id: parsedToken._id });
+    console.log("User extracted: ", log(user));
 
-    console.log("Retrived projects: ", projects);
+    const projects = await getProjects(user._id, page_no, page_size);
+
+    console.log("Retrived projects: ", log(projects));
 
     return success(
       {

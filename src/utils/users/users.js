@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { error } from "../response.js";
 import log from "../log.js";
+import mongoose from "mongoose";
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
@@ -130,5 +131,19 @@ export const authMiddleware = (event, callback) => {
     );
 
     throw err;
+  }
+};
+
+export const isAuthorizedToAccessProject = async (user_id, project_id) => {
+  try {
+    const res = await User.exists({
+      _id: new mongoose.Types.ObjectId(user_id),
+      "projects.id": new mongoose.Types.ObjectId(project_id),
+    });
+
+    return res ? true : false;
+  } catch (error) {
+    console.log("Error while authorizing project acess: ", error.message);
+    throw error;
   }
 };
