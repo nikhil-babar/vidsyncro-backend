@@ -31,7 +31,7 @@ export default async function sendEmail(destination, content) {
 
     return res.$metadata;
   } catch (error) {
-    console.log("Error while sending the message: ", error.message);
+    console.log("Error while sending the message: ", error);
     throw error;
   }
 }

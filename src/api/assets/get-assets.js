@@ -1,15 +1,12 @@
-import { s3Client } from "../../utils/s3-client.js";
-import { ListObjectsCommand } from "@aws-sdk/client-s3";
 import log from "../../utils/log.js";
 import { error, success } from "../../utils/response.js";
 import { z } from "zod";
-import { segments, segmentToTaskMapping } from "../../../config/config.js";
+import { segments } from "../../config/config.js";
 import mongoose from "mongoose";
-import Project from "../../models/Project.js";
-import connectDb from "../../utils/mongo-connection.js";
-import getUser from "../../utils/get-user.js";
-
-const VIDEO_BUCKET = process.env.VIDEO_BUCKET;
+import connectDb from "../../utils/clients/mongo-connection.js";
+import { parse } from "../../utils/parser.js";
+import { getAssets } from "../../utils/projects/projects.js";
+import { authMiddleware } from "../../utils/users/users.js";
 
 const getAssetsParameter = z.object({
   project_id: z.custom((val) => mongoose.isObjectIdOrHexString(val), {
@@ -20,9 +17,15 @@ const getAssetsParameter = z.object({
       segments
     ).join(",")}`,
   }),
+  page_no: z.coerce.number({
+    required_error: "Page no required",
+  }),
+  page_size: z.coerce.number({
+    required_error: "Page size required",
+  }),
 });
 
-export const handler = async (event, context) => {
+export const handler = async (event, context, callback) => {
   try {
     context.callbackWaitsForEmptyEventLoop = false;
 
@@ -30,75 +33,27 @@ export const handler = async (event, context) => {
 
     console.log("Received event: ", log(event));
 
-    const parsed = getAssetsParameter.safeParse(event.queryStringParameters);
+    const { project_id, segment, page_no, page_size } = parse(
+      event.queryStringParameters,
+      getAssetsParameter,
+      callback
+    );
 
-    if (!parsed.success) {
-      return error(
-        {
-          message: parsed.error,
-        },
-        422
-      );
-    }
+    const user = authMiddleware(event, callback);
 
-    const { project_id, segment } = parsed.data;
+    console.log("User extracted: ", log(user));
 
-    let parsedToken = null;
-
-    try {
-      parsedToken = await getUser(event);
-    } catch (err) {
-      return error(
-        {
-          message: "Invalid api request",
-        },
-        403
-      );
-    }
-
-    console.log("Retrieved Token: ", log(parsedToken));
-
-    if (segment.localeCompare(segments.assets) === 0) {
-      const input = {
-        Bucket: VIDEO_BUCKET,
-        Prefix: `${project_id}/${segment}`,
-      };
-
-      const command = new ListObjectsCommand(input);
-
-      const res = await s3Client.send(command);
-
-      return success(
-        {
-          data: res.Contents,
-        },
-        200
-      );
-    }
-
-    const task_type = segmentToTaskMapping[segment];
-
-    const project = await Project.findOne({
-      user_id: parsedToken._id,
-      _id: new mongoose.Types.ObjectId(project_id),
-    });
-
-    if (!project) {
-      return error(
-        {
-          message: "Project not found",
-        },
-        404
-      );
-    }
-
-    const tasks = project.tasks.filter(
-      (e) => e.task.localeCompare(task_type) === 0
+    const assets = await getAssets(
+      user._id,
+      project_id,
+      segment,
+      page_no,
+      page_size
     );
 
     return success(
       {
-        data: tasks,
+        data: assets,
       },
       200
     );

@@ -1,9 +1,11 @@
+import mongoose from "mongoose";
 import { Schema, model } from "mongoose";
 
 export const UserSchema = new Schema({
   email: {
     type: String,
     required: true,
+    unique: true,
   },
   password: {
     type: String,
@@ -13,15 +15,30 @@ export const UserSchema = new Schema({
     type: String,
     required: true,
   },
-  projects: {
-    type: [Schema.Types.ObjectId],
-  },
-  editor_access: {
-    type: [Schema.Types.ObjectId],
-  },
   verified: {
     type: Boolean,
     default: false,
+  },
+  projects: {
+    type: [
+      {
+        id: {
+          type: mongoose.Schema.ObjectId,
+          ref: "Project",
+          required: true,
+        },
+        title: {
+          type: String,
+          required: true,
+        },
+        access_type: {
+          type: String,
+          enum: ["owner", "editor"],
+          required: true,
+        },
+      },
+    ],
+    default: [],
   },
 });
 

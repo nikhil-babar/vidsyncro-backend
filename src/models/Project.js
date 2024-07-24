@@ -1,4 +1,5 @@
-import { Schema, SchemaTypes, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
+import { segments } from "../config/config.js";
 
 export const ProjectSchema = new Schema({
   title: {
@@ -9,52 +10,57 @@ export const ProjectSchema = new Schema({
     type: String,
     required: true,
   },
-  user_id: {
-    type: String,
+  owner_id: {
+    type: mongoose.Schema.ObjectId,
+    ref: "User",
     required: true,
   },
-  tasks: {
+  editors: {
     type: [
       {
-        task: {
+        id: {
+          type: mongoose.Schema.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        name: {
           type: String,
           required: true,
         },
-        resource_path: {
-          type: [String],
-          required: true,
-          minlength: 1,
-        },
-        events: {
-          type: SchemaTypes.Mixed,
-          default: {},
-        },
-      },
-    ],
-    default: [],
-  },
-  invitations: {
-    type: [
-      {
         email: {
           type: String,
           required: true,
         },
-        message: {
-          type: String,
-          required: true,
-        },
+      },
+    ],
+  },
+  assets: {
+    type: [
+      {
         project_id: {
+          type: mongoose.Schema.ObjectId,
+          ref: "Project",
+          required: true,
+        },
+        name: {
           type: String,
           required: true,
         },
-        accepted: {
-          type: Boolean,
-          default: false,
+        segment: {
+          type: String,
+          required: true,
+          enum: Object.values(segments),
+        },
+        asset_id: {
+          type: String,
+          required: true,
+        },
+        key: {
+          type: String,
+          required: true,
         },
       },
     ],
-    default: [],
   },
 });
 

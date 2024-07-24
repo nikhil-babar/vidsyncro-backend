@@ -1,0 +1,225 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Timeout: 100
+    Runtime: nodejs20.x
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        SECRET_KEY: <YOUR_SECRET_KEY>
+        REGION: <YOUR_REGION>
+        SNS_TOPIC: arn:aws:sns:<YOUR_REGION>:<YOUR_ACCOUNT_ID>:<YOUR_SNS_TOPIC_NAME>
+        CLUSTER: <YOUR_CLUSTER_NAME>
+        CLUSTER_SUBNET: <YOUR_CLUSTER_SUBNET_ID>
+        CLUSTER_SECURITY_GROUP: <YOUR_SECURITY_GROUP_ID>
+        VIDEO_BUCKET: <YOUR_VIDEO_BUCKET_NAME>
+        URL_EXPIRATION_SECONDS: <YOUR_URL_EXPIRATION_SECONDS>
+        MONGO_URL: <YOUR_MONGO_URL>
+        MONGO_DB_NAME: <YOUR_MONGO_DB_NAME>
+        API_GATEWAY_URL: <YOUR_API_GATEWAY_URL>
+        FRONTEND_END: <YOUR_FRONTEND_END_URL>
+        SES_IDENTITY_ARN: arn:aws:ses:<YOUR_REGION>:<YOUR_ACCOUNT_ID>:identity/<YOUR_SES_IDENTITY>
+        EMAIL: <YOUR_EMAIL>
+        ASSEMBLY_API_KEY: <YOUR_ASSEMBLY_API_KEY>
+        HUGGINGFACE_API_KEY: <YOUR_HUGGINGFACE_API_KEY>
+        GEMINI_API_KEY: <YOUR_GEMINI_API_KEY>
+        GOOGLE_CLIENT_ID: <YOUR_GOOGLE_CLIENT_ID>
+    Layers:
+      - arn:aws:lambda:<YOUR_REGION>:<YOUR_ACCOUNT_ID>:layer:<YOUR_LAYER_NAME>:<YOUR_LAYER_VERSION>
+
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'content-type'"
+      AllowOrigin: "'<YOUR_FRONTEND_END_URL>'"
+      AllowCredentials: true
+
+Resources:
+  DependencyLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: <YOUR_LAYER_NAME>
+      ContentUri: packages/nodejs
+      CompatibleRuntimes:
+        - nodejs20.x
+      LicenseInfo: "MIT"
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: nodejs20.x
+
+  EventLoggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src
+      Handler: api/logger/event.handler
+      Events:
+        CreateAccount:
+          Type: Api
+          Properties:
+            Path: /logger/v1/event
+            Method: get
+
+  CreateAccountFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src
+      Handler: api/users/create-account.handler
+      Policies:
+        - SESCrudPolicy:
+            IdentityName: <YOUR_EMAIL>
+      Events:
+        CreateAccount:
+          Type: Api
+          Properties:
+            Path: /user/v1/create-account
+            Method: post
+
+  VerifyAccountFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src
+      Handler: api/users/verify.handler
+      Events:
+        VerifyAccount:
+          Type: Api
+          Properties:
+            Path: /user/v1/verify
+            Method: get
+
+  SigninFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src
+      Handler: api/users/signin.handler
+      Events:
+        Signin:
+          Type: Api
+          Properties:
+            Path: /user/v1/signin
+            Method: post
+
+  SendInvitationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src
+      Handler: api/invitation/send-invitation.handler
+      Policies:
+        - SESCrudPolicy:
+            IdentityName: <YOUR_EMAIL>
+      Events:
+        SendInvitation:
+          Type: Api
+          Properties:
+            Path: /invitation/v1/send-invitation
+            Method: post
+
+  AcceptInvitationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src
+      Handler: api/invitation/accept-invitation.handler
+      Events:
+        AcceptInvitation:
+          Type: Api
+          Properties:
+            Path: /invitation/v1/accept-invitation
+            Method: get
+
+  PostAssetsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src
+      Handler: api/assets/post-assets.handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: <YOUR_VIDEO_BUCKET_NAME>
+      Events:
+        PostAssets:
+          Type: Api
+          Properties:
+            Path: /assets/v1/post-assets
+            Method: post
+
+  PostAssetsTriggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: srcrc
+      Handler: assets/post-assets-trigger.handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: <YOUR_VIDEO_BUCKET_NAME>
+
+  GetAssetsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: srcrc
+      Handler: assets/get-assets.handler
+      Events:
+        GetAssets:
+          Type: Api
+          Properties:
+            Path: /assets/v1/get-assets
+            Method: get
+
+  CreateProjectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src
+      Handler: api/project/create-project.handler
+      Events:
+        CreateProject:
+          Type: Api
+          Properties:
+            Path: /project/v1/create-project
+            Method: post
+
+  GetProjectsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src
+      Handler: api/project/get-projects.handler
+      Events:
+        GetProjects:
+          Type: Api
+          Properties:
+            Path: /project/v1/get-projects
+            Method: get
+
+  PollTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src
+      Handler: services/task-poller/index.handler
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: <YOUR_SQS_QUEUE_NAME>
+        - EcsRunTaskPolicy:
+            TaskDefinition: "*"
+      Events:
+        PollTask:
+          Type: SQS
+          Properties:
+            Queue: arn:aws:sqs:<YOUR_REGION>:<YOUR_ACCOUNT_ID>:<YOUR_SQS_QUEUE_NAME>
+            BatchSize: 10
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: "true"
+
+Outputs:
+  VidSyncroApi:
+    Description: API Gateway endpoint URL for vidsyncro.
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/"

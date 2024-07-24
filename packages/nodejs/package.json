@@ -18,6 +18,7 @@
     "@google/generative-ai": "^0.8.0",
     "@huggingface/inference": "^2.6.7",
     "assemblyai": "^4.4.1",
+    "bcryptjs": "^2.4.3",
     "fluent-ffmpeg": "^2.1.2",
     "jsonwebtoken": "^9.0.2",
     "mime-types": "^2.1.35",

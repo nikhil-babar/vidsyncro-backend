@@ -1,18 +1,11 @@
-import connectDb from "../../utils/mongo-connection.js";
-import Project from "../../models/Project.js";
+import connectDb from "../../utils/clients/mongo-connection.js";
 import log from "../../utils/log.js";
 import { error, success } from "../../utils/response.js";
 import { z } from "zod";
 import mongoose from "mongoose";
-import getUser from "../../utils/get-user.js";
-import User from "../../models/User.js";
-import jwt from "jsonwebtoken";
-
-connectDb()
-  .then(() => console.log("Connected to mongodb"))
-  .catch(() => {
-    console.log("Failed to connect to mongodb");
-  });
+import { parse } from "../../utils/parser.js";
+import { authMiddleware } from "../../utils/users/users.js";
+import { createProject } from "../../utils/projects/projects.js";
 
 const createProjectParameters = z
   .object({
@@ -25,9 +18,7 @@ const createProjectParameters = z
   })
   .strict();
 
-const SECRET_KEY = process.env.SECRET_KEY;
-
-export async function handler(event, context) {
+export async function handler(event, context, callback) {
   try {
     context.callbackWaitsForEmptyEventLoop = false;
 
@@ -35,70 +26,23 @@ export async function handler(event, context) {
 
     console.log("Received event: ", log(event));
 
-    const parsed = createProjectParameters.safeParse(JSON.parse(event.body));
+    const { title, description } = parse(
+      JSON.parse(event.body),
+      createProjectParameters,
+      callback
+    );
 
-    if (!parsed.success) {
-      return error(
-        {
-          message: parsed.error,
-        },
-        422
-      );
-    }
+    const user = authMiddleware(event, callback);
 
-    const { title, description } = parsed.data;
-    let parsedToken = null;
+    console.log("User extracted: ", log(user));
 
-    try {
-      parsedToken = await getUser(event);
-    } catch (err) {
-      return error(
-        {
-          message: "Invalid api request",
-        },
-        403
-      );
-    }
-
-    const account = await User.findById(parsedToken._id);
-
-    console.log("Account retrieved: ", log(account._doc));
-
-    const newProject = new Project({
-      user_id: account._id,
-      title,
-      description,
-    });
-
-    await newProject.save();
-
-    console.log("Created new project: ", log(newProject._doc));
-
-    account.projects = [...account.projects, newProject._id];
-
-    await account.save();
-
-    console.log("Updated user: ", log(account._doc));
-
-    const accountToken = jwt.sign(account._doc, SECRET_KEY, {
-      expiresIn: "10h",
-    });
-
-    console.log("Token generated: ", accountToken);
+    const project = await createProject(title, description, user._id);
 
     return success(
       {
-        data: newProject,
+        data: project,
       },
-      200,
-      {
-        user: {
-          value: accountToken,
-          path: "/",
-          httpOnly: true,
-          secure: true,
-        },
-      }
+      200
     );
   } catch (err) {
     console.log(err.message);
