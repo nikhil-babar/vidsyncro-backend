@@ -11,7 +11,7 @@ jspm_packages
 sam.yaml
 *.toml
 event.json
-
+.mp4
 
 # Serverless directories
 serverless
