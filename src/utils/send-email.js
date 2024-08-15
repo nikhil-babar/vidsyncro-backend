@@ -1,5 +1,5 @@
 import { SendEmailCommand } from "@aws-sdk/client-sesv2";
-import { sesClient } from "./ses-client.js";
+import { sesClient } from "./clients/ses-client.js";
 
 const EMAIL = process.env.EMAIL;
 const SES_IDENTITY_ARN = process.env.SES_IDENTITY_ARN;
