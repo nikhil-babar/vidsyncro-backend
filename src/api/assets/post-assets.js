@@ -1,7 +1,7 @@
 import { success, error } from "../../utils/response.js";
 import { v4 as uuid } from "uuid";
 import { z } from "zod";
-import { segments } from "../../../config/config.js";
+import { segments } from "../../config/config.js";
 import mongoose from "mongoose";
 import log from "../../utils/log.js";
 import {
