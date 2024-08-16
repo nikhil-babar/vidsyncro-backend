@@ -3,9 +3,13 @@ import log from "../../utils/log.js";
 import connectDb from "../../utils/clients/mongo-connection.js";
 import { getMetadata } from "../../utils/storage/get-metadata.js";
 import { addAsset } from "../../utils/projects/projects.js";
-import { segments } from "../../config/config.js";
+import {
+  segments,
+  tasks as segmentToTaskMapping,
+} from "../../config/config.js";
 import { parse } from "../../utils/parser.js";
 import z from "zod";
+import addTask from "../../utils/notification/task-event.js";
 
 const putObjectEventParameters = z
   .object({
@@ -63,6 +67,24 @@ export const handler = async (event, context) => {
         console.log("Added asset to the project!");
       } catch (error) {
         console.log("Error while adding the asset for object: ", object_key);
+
+        continue;
+      }
+
+      const tasks = segmentToTaskMapping[data.segment];
+
+      if (!tasks || tasks.length === 0) {
+        continue;
+      }
+
+      try {
+        await addTask(data.project_id, tasks, {
+          ...data,
+        });
+
+        console.log("Added tasks to the asset!");
+      } catch (error) {
+        console.log("Error while adding the task for object: ", object_key);
 
         continue;
       }

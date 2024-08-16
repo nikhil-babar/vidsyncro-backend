@@ -7,28 +7,17 @@ export const segments = {
   video_assets: "video_assets",
 };
 
-export const tasks = {
-  publish_to_edited_videos: "publish_to_edited_videos",
-  publish_to_production_videos: "publish_to_production_videos",
-  publish_to_timeline_videos: "publish_to_timeline_videos",
-};
-
 export const events = {
   transcoding: "transcoding",
   transcription: "transcription",
   edl_processing: "edl_processing",
 };
 
-export const segmentToTaskMapping = {
-  edited_videos: tasks.publish_to_edited_videos,
-  production_videos: tasks.publish_to_production_videos,
-  timeline_videos: tasks.publish_to_timeline_videos,
-};
-
-export const taskToEventMapping = {
-  publish_to_production_videos: [events.transcoding],
-  publish_to_edited_videos: [events.transcoding, events.transcription],
-  publish_to_timeline_videos: [events.edl_processing],
+export const tasks = {
+  assets: [events.transcription, events.edl_processing, events.transcoding],
+  edited_videos: [events.transcoding],
+  production_videos: [events.transcription],
+  timeline_videos: [events.edl_processing],
 };
 
 export const eventDetails = {
