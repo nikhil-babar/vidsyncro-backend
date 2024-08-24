@@ -3,7 +3,7 @@
 
 
 ### Demonstration: https://www.youtube.com/watch?v=bU4bNd35Rb0
-
+### EDL Processing Demo : https://drive.google.com/file/d/1rJc6RJfmfOCAbP_9ovvzZogF8R_l9M_i/view?usp=sharing
 ## Overview
 
 Vidsyncro is a serverless video publishing platform which takes videos as input and produces production grade assets like subtitles, transcoded dash package. It also generates suitable title, description and social media post.
